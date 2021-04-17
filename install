@@ -5,7 +5,8 @@ usage() {
 Usage: $(basename "$0") [OPTIONS] [DIR]
 
 Install the dotfiles in [DIR] to \$HOME. 
-[DIR] defaults to "dotfiles" dir in project root.
+
+[DIR] defaults to the "dotfiles" dir in project root.
 
 OPTIONS
   -q        Quiet mode
