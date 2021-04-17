@@ -1,0 +1,27 @@
+#!/bin/bash
+#
+# recursively symlink the contents of `./dotfiles` to `$HOME`
+#
+
+set -eu
+
+# read list of files in `./dotfiles`, turn it into an array, and iterate
+dotfiles_dir=$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)/dotfiles
+readarray -t dotfiles < <(cd "$dotfiles_dir" && find "." -mindepth 1 -type f)
+for dotfile in "${dotfiles[@]}"; do
+  # use absolute paths to avoid relative pain.
+  src="$(realpath -s "$dotfiles_dir/$dotfile")"
+  dest="$(realpath -s "$HOME/$dotfile")"
+
+  # destination exists and isn't a link; rename it.
+  if [[ -f "$dest" && ! -h "$dest" ]]; then
+    backup="$(dirname "$dest")/$(basename "$dest").$(date '+%s')"
+    printf "Renaming file %s -> %s\n" "$dest" "$backup"
+    mv -f "$dest" "$backup"
+  fi
+
+  # symlink ensuring destination directory exists
+  printf "Linking %s -> %s\n" "$src" "$dest"
+  mkdir -p "$(dirname "$dest")"
+  ln -sf "$src" "$dest"
+done
