@@ -1,0 +1,7 @@
+[user]
+	email = kenneth.mmiles@gmail.com
+	name = kmmiles
+[credential]
+	helper = store
+[core]
+	editor = nvim
