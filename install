@@ -1,0 +1,55 @@
+#!/bin/bash
+
+usage() {
+  cat << EOF >&2
+Usage: $(basename "$0") [OPTIONS] [DIR]
+
+Install the dotfiles in [DIR] to \$HOME. 
+[DIR] defaults to "dotfiles" dir in project root.
+
+OPTIONS
+  -q        Quiet mode
+
+EXAMPLE
+
+link-dotfiles ./mydotfiles
+EOF
+}
+
+verbose_log() { $verbose && 2>&1 printf "%s\n" "$*" ; }
+
+set -eu
+
+# args / usage
+verbose=true
+while getopts 'q' flag; do
+  case "${flag}" in
+    q) verbose=false ;;
+    *) usage ; exit 1 ;; 
+  esac
+done
+shift $((OPTIND-1))
+dotfiles_dir="${1:-}"
+if [[ -z "$dotfiles_dir" ]]; then
+  rootdir=$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)
+  dotfiles_dir=$rootdir/dotfiles
+fi
+
+# read dotfiles into array and iterate
+readarray -t dotfiles < <(cd "$dotfiles_dir" && find "." -mindepth 1 -type f)
+for dotfile in "${dotfiles[@]}"; do
+  src="$(realpath -s "$dotfiles_dir/$dotfile")"
+  dest="$(realpath -s "$HOME/$dotfile")"
+
+  # destination exists and isn't a link; rename it.
+  if [[ -f "$dest" && ! -h "$dest" ]]; then
+    backup="$(dirname "$dest")/$(basename "$dest").$(date '+%s')"
+    verbose_log "Renaming file $dest -> $backup"
+    mv -f "$dest" "$backup"
+  fi
+
+  # do the link, ensuring destination directory exists
+  verbose_log "Linking $src -> $dest"
+  mkdir -p "$(dirname "$dest")"
+  ln -sf "$src" "$dest"
+done
