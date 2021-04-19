@@ -5,7 +5,7 @@
 
 set -eu
 
-# read list of files in `./dotfiles`, turn it into an array, and iterate
+# iterate array of filenames in `./dotfiles`
 dotfiles_dir=$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)/dotfiles
 readarray -t dotfiles < <(cd "$dotfiles_dir" && find "." -mindepth 1 -type f)
 for dotfile in "${dotfiles[@]}"; do
