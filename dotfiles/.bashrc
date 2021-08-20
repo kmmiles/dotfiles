@@ -79,10 +79,10 @@ if [[ -x /usr/bin/dircolors ]]; then
 fi
 
 # x11 for wsl2
-if has wslpath; then
-  DISPLAY=$(grep nameserver /etc/resolv.conf | awk '{print $2; exit;}'):0.0
-  export DISPLAY
-fi
+#if has wslpath; then
+#  DISPLAY=$(grep nameserver /etc/resolv.conf | awk '{print $2; exit;}'):0.0
+#  export DISPLAY
+#fi
 
 # fnm 
 has fnm && eval "$(fnm env)"

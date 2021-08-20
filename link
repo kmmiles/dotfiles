@@ -10,6 +10,7 @@ dotfiles_dir=$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)/dotfiles
 readarray -t dotfiles < <(cd "$dotfiles_dir" && find "." -mindepth 1 -type f)
 for dotfile in "${dotfiles[@]}"; do
   # use absolute paths to avoid relative pain.
+  mkdir -p "$(dirname "$HOME/$dotfile")"
   src="$(realpath -s "$dotfiles_dir/$dotfile")"
   dest="$(realpath -s "$HOME/$dotfile")"
 
@@ -22,6 +23,5 @@ for dotfile in "${dotfiles[@]}"; do
 
   # symlink ensuring destination directory exists
   printf "Linking %s -> %s\n" "$src" "$dest"
-  mkdir -p "$(dirname "$dest")"
   ln -sf "$src" "$dest"
 done
