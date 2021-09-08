@@ -55,6 +55,7 @@ has nvim        &&  alias vim='nvim'
 has python3     &&  alias httpd='python3 -m http.server'
 has dpkg        &&  alias apt-provides='dpkg -S'
 has less        &&  alias less='less -R'
+has tmux        &&  alias mux='tmux new -A -s km'
 
 # less colors
 export LESS_TERMCAP_mb=$'\e[1;32m'
@@ -64,6 +65,9 @@ export LESS_TERMCAP_se=$'\e[0m'
 export LESS_TERMCAP_so=$'\e[01;33m'
 export LESS_TERMCAP_ue=$'\e[0m'
 export LESS_TERMCAP_us=$'\e[1;4;31m'
+
+# use `vim` for manpages
+export MANPAGER="/bin/sh -c \"col -bx | vim -c 'set ft=man' -\""
 
 # dircolors
 if [[ -x /usr/bin/dircolors ]]; then

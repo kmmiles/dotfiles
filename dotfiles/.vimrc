@@ -10,8 +10,8 @@ set modeline
 let g:is_bash = 1
 
 if has('nvim')
-  "autocmd vimenter * ++nested colorscheme gruvbox
   colorscheme nord
+  set clipboard=unnamedplus
 else
   colorscheme elflord
 endif
