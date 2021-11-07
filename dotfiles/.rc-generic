@@ -1,0 +1,80 @@
+################################################################################
+# generic environment variables
+################################################################################
+# history
+HISTCONTROL=ignoredups:erasedups
+HISTSIZE=100000
+HISTFILESIZE=100000
+SAVEHIST=100000
+
+# editor
+GIT_EDITOR=nvim
+VISUAL=nvim
+EDITOR=nvim
+export GIT_EDITOR VISUAL EDITOR
+
+# PATH's
+GOPATH="$HOME"/.local/go
+PONYPATH="$HOME"/.local/share/ponyup
+EMACSPATH="$HOME"/.emacs.d
+FLUTTERPATH="$HOME"/.local/src/flutter
+PATH="$HOME/.local/bin:$EMACSPATH/bin:$FLUTTER_PATH/bin:$PONYPATH/bin:$PATH"
+export PATH GOPATH PONYPATH EMACSPATH FLUTTERPATH
+
+# less colors
+export LESS_TERMCAP_mb=$'\e[1;32m'
+export LESS_TERMCAP_md=$'\e[1;32m'
+export LESS_TERMCAP_me=$'\e[0m'
+export LESS_TERMCAP_se=$'\e[0m'
+export LESS_TERMCAP_so=$'\e[01;33m'
+export LESS_TERMCAP_ue=$'\e[0m'
+export LESS_TERMCAP_us=$'\e[1;4;31m'
+
+################################################################################
+# functions
+################################################################################
+# has bin in path?
+has() {
+  type "$1" &> /dev/null
+} 
+
+# gemini client
+gemini() {
+  openssl s_client -quiet -crlf   \
+    -servername drewdevault.com   \
+    -connect $1:1965 \
+  | awk '{ print "response: " $0 }'
+}
+
+################################################################################
+# main
+################################################################################
+has fnm         &&  eval "$(fnm env)" || :
+has exa         &&  alias ls='exa --git' || :
+has prettyping  &&  alias ping='prettyping --nolegend' || :
+has btm         &&  alias btm='btm --battery --color gruvbox' || :
+has fnm         &&  alias nvm='fnm' || :
+has nvim        &&  alias vim='nvim' || :
+has python3     &&  alias httpd='python3 -m http.server' || :
+has less        &&  alias less='less -R' || :
+has apt-file    &&  alias whathas='apt-file search' || :
+has dpkg        &&  alias apt-provides='dpkg -S' || :
+has tmux        &&  alias mux='tmux new -A -s km' || :
+
+# use vim for manpages
+if has nvim; then
+  MANPAGER="/bin/sh -c \"col -bx | nvim -c 'set ft=man' -\""
+else
+  MANPAGER="/bin/sh -c \"col -bx | vim -c 'set ft=man' -\""
+fi
+export MANPAGER
+
+# old x11 for wsl2
+if has wslpath && [[ ! -d "/mnt/wslg" ]]; then
+  DISPLAY=$(grep nameserver /etc/resolv.conf | awk '{print $2; exit;}'):0.0
+  export DISPLAY
+fi
+
+if [[ -f "$HOME"/.cargo/env ]]; then
+  source "$HOME"/.cargo/env
+fi

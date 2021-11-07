@@ -1,5 +1,8 @@
-syntax enable
+let g:is_bash = 1
+set visualbell
 set termguicolors
+
+syntax enable
 set laststatus=2
 set tabstop=4
 set softtabstop=2
@@ -7,7 +10,6 @@ set shiftwidth=2
 set expandtab
 set backspace=2
 set modeline
-let g:is_bash = 1
 
 if has('nvim')
   colorscheme nord
