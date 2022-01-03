@@ -15,6 +15,9 @@ export GIT_EDITOR VISUAL EDITOR
 
 # PATH's
 GOPATH="$HOME"/.local/go
+
+GOPATH=/usr/local/go
+
 PONYPATH="$HOME"/.local/share/ponyup
 EMACSPATH="$HOME"/.emacs.d
 FLUTTERPATH="$HOME"/.local/src/flutter

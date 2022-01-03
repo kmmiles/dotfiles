@@ -18,9 +18,9 @@ PROMPT='%B%F{240}%1~%f%b [%(?.%F{green}√.%F{red}%?)%f] $ '
 
 # zsh plugins
 plugins=(
-  "zsh-syntax-highlighting/zsh-syntax-highlighting.zsh"
-  "zsh-autosuggestions/zsh-autosuggestions.zsh"
-  "zsh-history-substring-search/zsh-history-substring-search.zsh"
+  "zsh-users/zsh-syntax-highlighting/zsh-syntax-highlighting.zsh"
+  "zsh-users/zsh-autosuggestions/zsh-autosuggestions.zsh"
+  "zsh-users/zsh-history-substring-search/zsh-history-substring-search.zsh"
 )
 for plugin in $plugins; do
   if [[ -f "$HOME/.local/src/$plugin" ]]; then
@@ -35,3 +35,5 @@ if [[ -f "$HOME"/.rc-generic ]]; then
   # shellcheck source=/dev/null
   source "$HOME"/.rc-generic
 fi
+
+eval "$(starship init zsh)"

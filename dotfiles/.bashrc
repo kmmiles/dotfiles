@@ -35,3 +35,6 @@ if [[ -f "$HOME"/.rc-generic ]]; then
   # shellcheck source=/dev/null
   source "$HOME"/.rc-generic
 fi
+
+
+eval "$(starship init bash)"
