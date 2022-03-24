@@ -21,10 +21,12 @@ GOPATH=/usr/local/go
 PONYPATH="$HOME"/.local/share/ponyup
 EMACSPATH="$HOME"/.emacs.d
 FLUTTERPATH="$HOME"/.local/src/flutter
-PATH="$HOME/.local/bin:$EMACSPATH/bin:$FLUTTER_PATH/bin:$PONYPATH/bin:$PATH"
-export PATH GOPATH PONYPATH EMACSPATH FLUTTERPATH
+DENO_INSTALL="/home/kmmiles/.deno"
+PATH="$HOME/.local/bin:$EMACSPATH/bin:$FLUTTER_PATH/bin:$PONYPATH/bin:$DENO_INSTALL/bin:$PATH"
+export PATH GOPATH PONYPATH EMACSPATH FLUTTERPATH DENOINSTALL
 
-# less colors
+# colors
+export COLORTERM=truecolor
 export LESS_TERMCAP_mb=$'\e[1;32m'
 export LESS_TERMCAP_md=$'\e[1;32m'
 export LESS_TERMCAP_me=$'\e[0m'
