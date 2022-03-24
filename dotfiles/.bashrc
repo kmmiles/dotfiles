@@ -36,5 +36,7 @@ if [[ -f "$HOME"/.rc-generic ]]; then
   source "$HOME"/.rc-generic
 fi
 
-
-eval "$(starship init bash)"
+# init starship if it's installed
+if command -v "starship" > /dev/null 2>&1; then
+  eval "$(starship init bash)"
+fi
