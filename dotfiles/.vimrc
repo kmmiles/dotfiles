@@ -12,7 +12,9 @@ set backspace=2
 set modeline
 
 if has('nvim')
-  colorscheme nord
+"  colorscheme nord
+  packadd! dracula
+  colorscheme dracula
   set clipboard=unnamedplus
 else
   colorscheme elflord
