@@ -67,12 +67,12 @@ has dpkg        &&  alias apt-provides='dpkg -S' || :
 has tmux        &&  alias mux='tmux new -A -s km' || :
 
 # use vim for manpages
-if has nvim; then
-  MANPAGER="/bin/sh -c \"col -bx | nvim -c 'set ft=man' -\""
-else
-  MANPAGER="/bin/sh -c \"col -bx | vim -c 'set ft=man' -\""
-fi
-export MANPAGER
+#if has nvim; then
+#  MANPAGER="/bin/sh -c \"col -bx | nvim -c 'set ft=man' -\""
+#else
+#  MANPAGER="/bin/sh -c \"col -bx | vim -c 'set ft=man' -\""
+#fi
+#export MANPAGER
 
 # old x11 for wsl2
 if has wslpath && [[ ! -d "/mnt/wslg" ]]; then
