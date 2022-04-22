@@ -6,6 +6,7 @@ HISTCONTROL=ignoredups:erasedups
 HISTSIZE=100000
 HISTFILESIZE=100000
 SAVEHIST=100000
+export HISTCONTROL HISTSIZE HISTFILESIZE SAVEHIST
 
 # editor
 GIT_EDITOR=nvim
@@ -55,7 +56,7 @@ gemini() {
 # main
 ################################################################################
 has fnm         &&  eval "$(fnm env)" || :
-has exa         &&  alias ls='exa --git' || :
+has exa         &&  alias ls='exa --git --sort new' || :
 has prettyping  &&  alias ping='prettyping --nolegend' || :
 has btm         &&  alias btm='btm --battery --color gruvbox' || :
 has fnm         &&  alias nvm='fnm' || :

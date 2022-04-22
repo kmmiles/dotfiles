@@ -36,7 +36,15 @@ if [[ -f "$HOME"/.rc-generic ]]; then
   source "$HOME"/.rc-generic
 fi
 
+# override history settings for zsh
+HISTFILE=~/.zsh_history
+setopt appendhistory
+
 # init starship if it's installed
 if command -v "starship" > /dev/null 2>&1; then
   eval "$(starship init zsh)"
 fi
+
+#function chpwd {
+#  printf "Dir changed to: %s\n" "$(pwd)"
+#}

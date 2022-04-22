@@ -13,6 +13,7 @@ set modeline
 
 if has('nvim')
   colorscheme nord
+"  autocmd vimenter * ++nested colorscheme gruvbox
 else
   colorscheme elflord
 endif
