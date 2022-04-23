@@ -44,7 +44,3 @@ setopt appendhistory
 if command -v "starship" > /dev/null 2>&1; then
   eval "$(starship init zsh)"
 fi
-
-#function chpwd {
-#  printf "Dir changed to: %s\n" "$(pwd)"
-#}
