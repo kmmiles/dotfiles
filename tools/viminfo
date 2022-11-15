@@ -1,0 +1,11 @@
+#!/bin/bash
+
+term=$1
+
+if [[ -z $term ]]; then
+  echo "What do you need help with?"
+  echo "For example, try '$( basename "$0" ) gdb'"
+  exit 1
+fi
+
+exec vim -c "exec \"Vinfo $term\" | set nonumber norelativenumber"

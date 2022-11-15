@@ -1,0 +1,37 @@
+#!/bin/bash
+###############################################################################
+set -euo pipefail
+e() { 2>&1 printf "%s%s%s\n" "$(tput setaf 1)" "$@" "$(tput sgr0)"; }
+w() { 2>&1 printf "%s%s%s\n" "$(tput setaf 3)" "$@" "$(tput sgr0)"; }
+i() { 2>&1 printf "%s%s%s\n" "$(tput setaf 7)" "$@" "$(tput sgr0)"; }
+t() { local s=$?; e "$0:${BASH_LINENO[0]} $BASH_COMMAND"; exit $s; }
+trap t ERR
+###############################################################################
+
+usage() {
+  cat << EOF >&2
+Usage: $(basename "$0") "<youtubeurl>"
+
+convert youtube video to mp3 and throw in ~/Music
+EOF
+}
+
+url="${1:-}"
+if [[ -z "$url" ]]; then
+  usage
+  exit 1
+fi
+
+outdir="$HOME"/Music
+if [[ ! -d "$outdir" ]]; then
+  e "No such directory: $outdir"
+  exit 1
+fi
+
+cd "$outdir"
+youtube-dl \
+  --extract-audio \
+  --audio-format "mp3" \
+  --restrict-filenames \
+  --output "%(title)s.%(ext)s" \
+  "$url"

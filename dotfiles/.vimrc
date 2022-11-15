@@ -10,6 +10,7 @@ set shiftwidth=2
 set expandtab
 set backspace=2
 set modeline
+"set spell spelllang=en_us
 
 if has('nvim')
   colorscheme nord
@@ -19,5 +20,5 @@ else
 endif
 
 " transparent bg
-autocmd vimenter * hi Normal guibg=NONE ctermbg=NONE
-autocmd vimenter * hi EndOfBuffer guibg=NONE ctermbg=NONE
+"autocmd vimenter * hi Normal guibg=NONE ctermbg=NONE
+"autocmd vimenter * hi EndOfBuffer guibg=NONE ctermbg=NONE

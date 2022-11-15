@@ -1,0 +1,14 @@
+#!/bin/bash
+
+free-disk-space() {
+  local dir
+
+  dir="${1:-.}"
+  printf "Checking %s...\n" "$(realpath -s "$dir")"
+  cd "${1:-.}" && du -hsx ./* 2> /dev/null | sort -rh | head -10
+  #du -hax "${1:-/}" 2> /dev/null | sort -nr | head -n 30
+}
+
+calc() { awk "BEGIN {print $*}" ; }
+
+free-disk-space "$@"

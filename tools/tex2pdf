@@ -1,0 +1,25 @@
+#!/bin/bash
+
+INPUT="${1:-}"
+
+set -e
+
+if [[ -z "$INPUT" ]]; then
+  echo "Usage: $0 <TEXFILE>"
+  echo ""
+  echo "Convert .tex to .pdf"
+  exit 1
+fi
+
+if [[ ! -f "$INPUT" ]]; then
+  echo "No such file: $INPUT"
+  exit 1
+fi
+
+TEMPDIR="$(mktemp -d)"
+cp "$INPUT" "$TEMPDIR"
+pushd "$TEMPDIR" > /dev/null 2>&1
+pdflatex --interaction=nonstopmode "$(basename "$INPUT")" > /dev/null 2>&1
+popd > /dev/null 2>&1
+mv "$TEMPDIR/*.pdf" .
+rm -rf "$TEMPDIR"

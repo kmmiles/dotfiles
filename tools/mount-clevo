@@ -1,0 +1,47 @@
+#!/bin/bash
+#
+# script for mounting/unmounting my clevo laptops windows share
+
+usage() {
+  cat << EOF >&2
+Usage: $(basename "$0") [OPTIONS]
+
+Mount clevo laptop share
+
+OPTIONS
+
+-u    Unmount if mounted
+EOF
+}
+
+#ip=172.16.0.2
+ip=192.168.12.152
+share=z
+mount_point=/mnt/clevo
+cred=$HOME/.config/clevo.txt
+umount=false
+while getopts 'u' flag; do
+  case "${flag}" in
+    u)
+      umount=true
+      ;;
+    *) usage ; exit 1 ;; 
+  esac
+done
+
+findmnt "$mount_point" &> /dev/null && is_mounted=true || is_mounted=false
+if $is_mounted && $umount; then
+  sudo umount "$mount_point"
+  printf "Unmounted %s\n" "$mount_point"
+elif ! $is_mounted && ! $umount; then
+  set -ex; \
+    sudo mkdir -p "$mount_point" && \
+    sudo chown "$(id -nu):$(id -ng)" "$mount_point" && \
+    sudo mount.cifs \
+      "//$ip/$share" \
+      "$mount_point" \
+      -o "cred=$cred,uid=$(id -u),gid=$(id -g)"
+  printf "Mounted %s to %s\n" "//$ip/$share" "$mount_point"
+else
+  printf "Nothing to do.\n"
+fi

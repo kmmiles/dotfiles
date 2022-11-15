@@ -1,0 +1,49 @@
+#!/bin/bash
+
+set -euo pipefail
+
+DEFAULT_PATH=$HOME/Downloads
+
+usage() {
+  cat <<EOF
+Usage: $(basename "$0") <URL>
+
+Downloads <URL> to $DEFAULT_PATH
+EOF
+}
+
+err()   { 1>&2 printf "%s%s%s\n" "$(tput setaf 1)" "$@" "$(tput sgr0)"; }
+warn()  { 1>&2 printf "%s%s%s\n" "$(tput setaf 3)" "$@" "$(tput sgr0)"; }
+info()  { printf "%s%s%s\n" "$(tput setaf 4)" "$@" "$(tput sgr0)"; }
+onerr() { local s=$?; err "$0:${BASH_LINENO[0]} $BASH_COMMAND"; exit $s; }
+
+main() {
+  trap onerr ERR
+  path="$DEFAULT_PATH"
+
+  while getopts 'h' flag; do
+    case "${flag}" in
+      *) usage ; exit 1 ;; 
+    esac
+  done
+
+  url="${1:-}"
+  if [[ -z "$url" ]]; then
+    usage
+    exit 1
+  fi
+
+  filename=$(basename "$url")
+  filepath=$path/$filename
+
+  if [[ ! -f "$filepath" ]]; then
+    info "Downloading \"$url\" to \"$filepath\"..."
+    mkdir -p "$path"
+    curl -sfL -o "$filepath" "$url"
+  fi
+
+  # print path of downloaded file
+  printf "%s\n" "$filepath"
+}
+
+main "$@"

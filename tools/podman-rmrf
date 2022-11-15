@@ -1,0 +1,30 @@
+#!/bin/bash
+
+prompt_question() {
+  local question answer
+  question="$1"
+
+  until [[ ${answer} == y ]] || [[ ${answer} == n ]]; do
+    read -rp "$question (y/N)? " answer
+    answer=${answer:-n}
+    answer=${answer,,}
+  done
+
+  [[ ${answer} == y ]] 
+}
+
+main() {
+  if prompt_question "Remove all containers, images, volume and cache?"; then
+    podman container list --all --external | while read -r line; do
+      id="$(echo "$line" | awk '{print $1}')"
+      podman container rm "$id"
+    done
+    podman system reset -f
+    rm -rf "$HOME/.cache/podman"
+    mkdir -p "$HOME/.cache/podman"
+  else
+    printf "Nothing done.\n"
+  fi
+}
+
+main "$@"

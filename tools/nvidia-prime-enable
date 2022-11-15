@@ -1,0 +1,45 @@
+#!/bin/bash
+###############################################################################
+set -euo pipefail
+
+usage() {
+  cat <<EOF
+Usage: $0 [OUTPUT_NAME]
+
+Enable nvidia PRIME, optionally providing [OUTPUT_NAME]
+EOF
+}
+
+err()   { 2>&1 printf "%s%s%s\n" "$(tput setaf 1)" "$@" "$(tput sgr0)"; }
+warn()  { 2>&1 printf "%s%s%s\n" "$(tput setaf 3)" "$@" "$(tput sgr0)"; }
+info()  { 2>&1 printf "%s%s%s\n" "$(tput setaf 4)" "$@" "$(tput sgr0)"; }
+onerr() { local s=$?; err "$0:${BASH_LINENO[0]} $BASH_COMMAND"; exit $s; }
+
+main() {
+  trap onerr ERR
+
+  sysmodeset=/sys/module/nvidia_drm/parameters/modeset
+  mpconf=/etc/modprobe.d/nvidia-drm-nomodeset.conf
+  output_name="${1-"eDP-1-1"}"
+
+  while getopts 'h' flag; do
+    case "${flag}" in
+      *) usage ; exit 1 ;; 
+    esac
+  done
+
+  if [[ "$(sudo cat "$sysmodeset" 2> /dev/null)" == "Y" ]]; then
+    info "enabling PRIME on $output_name"
+    if [[ ! -f $mpconf ]]; then
+      printf "options nvidia-drm modeset=1\n" | \
+        sudo tee $mpconf
+      sudo update-initramfs -u
+      warn "*** REBOOT REQUIRED ***"
+    fi
+    xrandr --output "$output_name" --set "PRIME Synchronization" 1
+  else
+    info "Doing nothing, PRIME already enabled"
+  fi
+}
+
+main "$@"

@@ -1,0 +1,38 @@
+#!/bin/bash
+###############################################################################
+set -euo pipefail
+e() { 2>&1 printf "%s%s%s\n" "$(tput setaf 1)" "$@" "$(tput sgr0)"; }
+w() { 2>&1 printf "%s%s%s\n" "$(tput setaf 3)" "$@" "$(tput sgr0)"; }
+i() { 2>&1 printf "%s%s%s\n" "$(tput setaf 7)" "$@" "$(tput sgr0)"; }
+t() { local s=$?; e "$0:${BASH_LINENO[0]} $BASH_COMMAND"; exit $s; }
+trap t ERR
+###############################################################################
+
+ctrl_c() {
+  echo "Interupt by user, exiting with error."
+  exit 1
+}
+trap ctrl_c INT
+
+usage() {
+  cat << EOF >&2
+Usage: $(basename "$0") "<youtubeurl>"
+
+convert youtube video to mp4 and throw in ~/Videos
+EOF
+}
+
+outdir="$HOME"/Videos
+if [[ ! -d "$outdir" ]]; then
+  e "No such directory: $outdir"
+  exit 1
+fi
+
+cd "$outdir"
+while ! youtube-dl \
+  --format "mp4" \
+  --restrict-filenames \
+  --output "%(title)s.%(ext)s" \
+  "$@"; do
+  printf "Retrying\n"
+done

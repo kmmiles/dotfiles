@@ -1,0 +1,7 @@
+#!/bin/bash
+
+manly() {
+  man "$1" | espeak -p0 -k20 -g2
+}
+
+manly "$@"

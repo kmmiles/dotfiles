@@ -1,0 +1,12 @@
+#!/bin/bash
+
+speak() {
+  if [[ -n "$1" ]]; then
+    file="$HOME/.local/cache/$RANDOM.wav"
+    mkdir -p "$(dirname "$file")"
+    pico2wave -l en-US -w "$file" "$(cat "$1")" | mpv "$file"
+    rm -f "$file"
+  fi
+}
+
+speak "$@"

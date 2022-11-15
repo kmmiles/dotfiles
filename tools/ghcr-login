@@ -1,0 +1,8 @@
+#!/bin/bash
+
+if [[ -z "$CR_PAT" ]]; then
+  CR_PAT=$(grep "github:" ~/Documents/pass.txt | awk '{print $2}')
+  export CR_PAT
+fi
+
+echo "$CR_PAT" | docker login ghcr.io -u kmmiles --password-stdin

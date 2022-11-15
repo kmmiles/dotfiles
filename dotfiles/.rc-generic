@@ -1,6 +1,7 @@
 ################################################################################
-# generic environment variables
+# generic environment stuff
 ################################################################################
+
 # history
 HISTCONTROL=ignoredups:erasedups
 HISTSIZE=100000
@@ -16,15 +17,14 @@ export GIT_EDITOR VISUAL EDITOR
 
 # PATH's
 GOPATH="$HOME"/.local/go
-
-GOPATH=/usr/local/go
-
 PONYPATH="$HOME"/.local/share/ponyup
 EMACSPATH="$HOME"/.emacs.d
-FLUTTERPATH="$HOME"/.local/src/flutter
-DENO_INSTALL="/home/kmmiles/.deno"
-PATH="$HOME/.local/bin:$EMACSPATH/bin:$FLUTTER_PATH/bin:$PONYPATH/bin:$DENO_INSTALL/bin:$PATH"
-export PATH GOPATH PONYPATH EMACSPATH FLUTTERPATH DENOINSTALL
+FLUTTERPATH="$HOME"/.local/flutter
+DENO_INSTALL="$HOME/.deno"
+NIMPATH="$HOME/.nimble"
+
+PATH="$HOME/.local/bin:$GOPATH/bin:$EMACSPATH/bin:$FLUTTERPATH/bin:$PONYPATH/bin:$DENO_INSTALL/bin:$NIMPATH/bin:$PATH"
+export PATH GOPATH PONYPATH EMACSPATH FLUTTERPATH DENOINSTALL NIMPATH
 
 # colors
 export COLORTERM=truecolor
@@ -37,26 +37,12 @@ export LESS_TERMCAP_ue=$'\e[0m'
 export LESS_TERMCAP_us=$'\e[1;4;31m'
 
 ################################################################################
-# functions
+# create aliases based on the installed tools
 ################################################################################
-# has bin in path?
-has() {
-  type "$1" &> /dev/null
-} 
+has() { type "$1" &> /dev/null ; } 
 
-# gemini client
-gemini() {
-  openssl s_client -quiet -crlf   \
-    -servername drewdevault.com   \
-    -connect $1:1965 \
-  | awk '{ print "response: " $0 }'
-}
-
-################################################################################
-# main
-################################################################################
 has fnm         &&  eval "$(fnm env)" || :
-has exa         &&  alias ls='exa --git --sort new' || :
+has exa         &&  alias ls='exa --color=always -g --icons --git --sort new' || :
 has prettyping  &&  alias ping='prettyping --nolegend' || :
 has btm         &&  alias btm='btm --battery --color gruvbox' || :
 has fnm         &&  alias nvm='fnm' || :
@@ -66,14 +52,10 @@ has less        &&  alias less='less -R' || :
 has apt-file    &&  alias whathas='apt-file search' || :
 has dpkg        &&  alias apt-provides='dpkg -S' || :
 has tmux        &&  alias mux='tmux new -A -s km' || :
-
-# use vim for manpages
-#if has nvim; then
-#  MANPAGER="/bin/sh -c \"col -bx | nvim -c 'set ft=man' -\""
-#else
-#  MANPAGER="/bin/sh -c \"col -bx | vim -c 'set ft=man' -\""
-#fi
-#export MANPAGER
+has man         &&  alias man='man-url' || :
+has ls          &&  alias lsd='ls -ld' || :
+has stat        &&  alias stat-fs='stat -fc "%T"'
+has glow        &&  alias glow='glow -p'
 
 # old x11 for wsl2
 if has wslpath && [[ ! -d "/mnt/wslg" ]]; then
@@ -84,3 +66,53 @@ fi
 if [[ -f "$HOME"/.cargo/env ]]; then
   source "$HOME"/.cargo/env
 fi
+
+################################################################################
+# some user facing functions
+################################################################################
+
+# gitRootDir [source_path]
+#
+# Print git root dir of [source_path].
+# Defaults to current working dir if [source_path] not supplied 
+#
+# Returns: 
+#   0 git root dir found
+#   1 git root dir not found
+gitRootDir() {
+  local source_path
+
+  source_path="$(realpath -sm "${*:-.}")" || return 1
+  while [[ "${source_path}" != "/" ]]; do
+    if [[ -d "${source_path}/.git" ]]; then
+      printf '%s\n' "$source_path"
+      return 0
+    fi
+    source_path="$(dirname "$source_path")"
+  done
+  return 1
+}
+
+uefi-or-bios() {
+  [ -d /sys/firmware/efi ] && echo 'UEFI' || echo 'Legacy BIOS/CSM'
+}
+
+#du -hax "${1:-/}" 2> /dev/null | sort -nr | head -n 30
+disk-space() {
+  printf "Checking %s...\n" "$(realpath -s "${1:-.}")"
+  (cd "${1:-.}" && du -hsx ./* 2> /dev/null | sort -rh | head -10)
+}
+
+new-password() {
+  tr -dc "a-zA-Z0-9\!%^&;:" < /dev/urandom | fold -w "${1:-16}" | head -n 1
+}
+
+man-url() {
+  regex='(https?|ftp|file)://[-[:alnum:]\+&@#/%?=~_|!:,.;]*[-[:alnum:]\+&@#/%=~_|]'
+  if [[ $1 =~ $regex ]]; then 
+    /usr/bin/man <(curl -s "$1")
+  else
+    /usr/bin/man "$@"
+  fi
+}
+

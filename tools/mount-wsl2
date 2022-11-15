@@ -1,0 +1,16 @@
+#!/bin/bash
+
+mount_path() { printf "/mnt/wsl/instances/%s" "$WSL_DISTRO_NAME" ; }
+fstab_line() { printf "/ %s none defaults,bind,X-mount.mkdir 0 0\n" "$(mount_path)" ; }
+
+# add line to fstab if it doesn't exist
+if ! grep -q "$(fstab_line)" /etc/fstab; then
+  printf "Adding mount to /etc/fstab\n"
+  printf "%s\n" "$(fstab_line)" | sudo tee -a /etc/fstab > /dev/null
+fi
+
+# do the mount
+if [[ ! -d "$(mount_path)" ]]; then
+  printf "Mounting %s\n" "$(mount_path)"
+  sudo mount "$(mount_path)"
+fi
