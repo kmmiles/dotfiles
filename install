@@ -1,5 +1,28 @@
 #!/bin/bash
 
+set -euo pipefail
+
+err()   { 1>&2 printf '%sERROR: %s%s\n' "$(tput setaf 1)" "$*" "$(tput sgr0)"; }
+warn()  { 1>&2 printf '%sWARNING: %s%s\n' "$(tput setaf 3)" "$*" "$(tput sgr0)"; }
+info()  { printf '%s\n' "$*"; }
+onerr() { local s=$?; err "$0:${BASH_LINENO[0]} $BASH_COMMAND"; exit $s; }
+has()   { type "$1" &> /dev/null ; } 
+trap onerr ERR
+
+SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+# shellcheck source=urls.sh
+source "$SCRIPT_DIR/urls.sh"
+DOWNLOAD_DIR="$HOME/Downloads"
+LOCAL_DIR="$HOME/.local"
+BIN_DIR="$LOCAL_DIR/bin"
+SRC_DIR="$LOCAL_DIR/src"
+
+usage() {
+  printf 'Usage: %s [OPTIONS]\n\n' "$(basename "$0")"
+  printf 'OPTIONS\n'
+  printf ' -l\tLink only (do not install packages)\n'
+}
+
 ################################################################################
 # Create a symlink
 # Arguments:
@@ -22,13 +45,13 @@ symlink() {
   # destination exists and isn't a link; rename it.
   if [[ -f "$dest" && ! -h "$dest" ]]; then
     backup="$(dirname "$dest")/$(basename "$dest").$(date '+%s')"
-    printf 'Renaming file %s -> %s\n' "$dest" "$backup"
+    info "Renaming file $dest -> $backup"
     mv -f "$dest" "$backup"
   fi
 
   # if the link doesn't exist, create it
   if [[ ! -h "$dest" ]]; then
-    printf 'Symlinking "%s" -> "%s"\n' "$src" "$dest"
+    info "Symlinking $src -> $dest"
     mkdir -p "$(dirname "$dest")"
     ln -bsf "$src" "$dest"
   fi
@@ -43,163 +66,118 @@ symlink() {
 # Returns:
 #   1 on error
 ################################################################################
-dl() {
-  local url filepath filename
+download() {
+  local url filename filepath
 
   url="${1:-}"
-  [[ -z "$url" ]] || return 1
+  [[ -n "$url" ]] || return 1
 
   filename=$(basename "$url")
-  [[ -z "$filename" ]] || return 1
+  [[ -n "$filename" ]] || return 1
 
-  filepath="$HOME"/Downloads/"$filename"
+  filepath="$DOWNLOAD_DIR/$filename"
+  [[ -n "$filepath" ]] || return 1
+
   if [[ ! -f "$filepath" ]]; then
-    mkdir -p "$HOME"/Downloads
-    if ! curl -sfL -o "$filepath" "$url"; then
-      return 1
-    fi
+    mkdir -p "$DOWNLOAD_DIR"
+    curl -sfL -o "$filepath" "$url" || return 1
   fi
 
   printf '%s\n' "$filepath"
 }
 
-################################################################################
-# install third party stuff
-################################################################################
-install_third_party() {
-  pp_url="https://raw.githubusercontent.com/denilsonsa/prettyping/master/prettyping"
-  exa_url="https://github.com/ogham/exa/releases/download/v0.9.0/exa-linux-x86_64-0.9.0.zip"
-  glow_url="https://github.com/charmbracelet/glow/releases/download/v1.0.2/glow_1.0.2_linux_x86_64.tar.gz"
-  yt_url="https://yt-dl.org/downloads/latest/youtube-dl"
-  yq_url="https://github.com/mikefarah/yq/releases/download/v4.6.1/yq_linux_amd64.tar.gz"
-  fnm_url="https://github.com/Schniz/fnm/releases/download/v1.23.0/fnm-linux.zip"
-  #yank_url="https://github.com/equalsraf/win32yank/releases/download/v0.0.4/win32yank-x64.zip"
+install_packages() {
+  mkdir -p "$BIN_DIR"
 
-  local_dir="$HOME/.local"
-  bin_dir="$local_dir/bin"
-  downloads="$HOME"/Downloads
+  if ! has "nvim"; then
+    info "Installing nvim"
+    tar xmzf "$(dl "${urls[nvim]}")" --strip-components=1 -C "$LOCAL_DIR"
+  fi
 
-  mkdir -p "$bin_dir"
-
-  ################################################################################
   # prettyping
-  ################################################################################
-  if [[ ! -f "$bin_dir/prettyping" ]]; then
-    install -D -v -m 755 -t "$bin_dir" "$(dl $pp_url)"
+  if ! has "prettyping"; then
+    info "Installing prettyping"
+    install -D -v -m 755 -t "$BIN_DIR" "$(download "${urls[prettyping]}")" 
   fi
 
-  ################################################################################
   # exa
-  ################################################################################
-  if [[ ! -f "$bin_dir/exa" ]]; then
-    unzip -qu "$(dl $exa_url)" -d "$downloads"
-    mv -fv "$downloads/exa-linux-x86_64" "$downloads/exa"
-    install -D -v -m 755 -t "$bin_dir" "$downloads/exa"
+  if ! has "exa"; then
+    info "Installing exa"
+    unzip -qu "$(download "${urls[exa]}")" -d "$DOWNLOAD_DIR"
+    mv -fv "$DOWNLOAD_DIR/exa-linux-x86_64" "$DOWNLOAD_DIR/exa"
+    install -D -v -m 755 -t "$BIN_DIR" "$DOWNLOAD_DIR/exa"
   fi
 
-  ################################################################################
   # fnm
-  ################################################################################
-  if [[ ! -f "$bin_dir/fnm" ]]; then
-    unzip -qu "$(dl $fnm_url)" -d "$downloads"
-    install -D -v -m 755 -t "$bin_dir" "$downloads/fnm"
+  if ! has "fnm"; then
+    info "Installing fnm"
+    unzip -qu "$(download "${urls[fnm]}")" -d "$DOWNLOAD_DIR"
+    install -D -v -m 755 -t "$BIN_DIR" "$DOWNLOAD_DIR/fnm"
   fi
 
-  ################################################################################
   # glow
-  ################################################################################
-  if [[ ! -f "$bin_dir"/glow ]]; then
-    tar xmzf "$(dl $glow_url)" -C "$downloads" glow
-    install -D -v -m 755 -t "$bin_dir" "$downloads/glow"
+  if ! has "glow"; then
+    info "Installing glow"
+    tar xmzf "$(download "${urls[glow]}")" -C "$DOWNLOAD_DIR" glow
+    install -D -v -m 755 -t "$BIN_DIR" "$DOWNLOAD_DIR/glow"
   fi
 
-  ################################################################################
   # yq 
-  ################################################################################
-  if [[ ! -f "$bin_dir"/yq ]]; then
-    tar xmzf "$(dl $yq_url)" -C "$downloads" ./yq_linux_amd64
-    mv -fv "$downloads/yq_linux_amd64" "$downloads/yq"
-    install -D -v -m 755 -t "$bin_dir" "$downloads/yq"
+  if ! has "yq"; then
+    info "Installing yq"
+    tar xmzf "$(download "${urls[yq]}")" -C "$DOWNLOAD_DIR" ./yq_linux_amd64
+    mv -fv "$DOWNLOAD_DIR/yq_linux_amd64" "$DOWNLOAD_DIR/yq"
+    install -D -v -m 755 -t "$BIN_DIR" "$DOWNLOAD_DIR/yq"
   fi
 
-  ################################################################################
   # youtube-dl
-  ################################################################################
-  if [[ ! -f "$bin_dir"/youtube-dl ]]; then
-    install -D -v -m 755 -t "$bin_dir" "$(dl $yt_url)"
+  if ! has "youtube-dl"; then
+    info "Installing youtube-dl"
+    install -D -v -m 755 -t "$BIN_DIR" "$(download "${urls[youtube-dl]}")"
+  fi
+}
+
+install_nord_theme() {
+  mkdir -p "$SRC_DIR"
+
+  if [[ ! -d "$SRC_DIR/nord-dircolors" ]]; then
+    git clone --depth 1 "${urls[nord-dircolors]}" "$SRC_DIR/nord-dircolors"
+    symlink "$SRC_DIR/nord-dircolors/src/dir_colors" "$HOME/.dir_colors"
   fi
 
-  ################################################################################
-  # win32yank.exe (for wsl2 only)
-  # allows nvim to copy stuff to the windows clipboard
-  ################################################################################
-  #if $IS_WSL && [[ ! -f "$bin_dir/win32yank.exe" ]]; then
-  #  unzip -qu "$(dl $yank_url)" -d "$downloads"
-  #  install -D -v -m 755 -t "$bin_dir" "$downloads/win32yank.exe"
-  #fi
+  if [[ ! -d "$SRC_DIR/nord-tmux" ]]; then
+    git clone --depth 1 "${urls[nord-tmux]}" "$SRC_DIR/nord-tmux"
+    mkdir -p "$HOME"/.tmux
+    symlink "$SRC_DIR/nord-tmux/nord.tmux" "$HOME"/.tmux/nord.tmux
+  fi
 
-  ################################################################################
-  # nord themes
-  ################################################################################
-  names=(
-    'nord-dircolors'
-    'nord-tmux'
-    'nord-vim'
-  )
+  if [[ ! -d "$SRC_DIR/nord-vim" ]]; then
+    git clone --depth 1 "${urls[nord-vim]}" "$SRC_DIR/nord-vim"
+    mkdir -p "$HOME"/.vim/colors
+    symlink "$SRC_DIR/nord-vim/colors/nord.vim" "$HOME"/.vim/colors/nord.vim
+  fi
+}
 
-  for name in "${names[@]}"; do
-    dest_dir="$HOME/.local/src/$name"
-    if [[ ! -d "$dest_dir" ]]; then
-      git clone --depth 1 "https://github.com/arcticicestudio/$name" "$dest_dir"
-    fi
-    case "${name}" in
-      nord-dircolors)
-        symlink "$dest_dir/src/dir_colors" "$HOME/.dir_colors"
-        ;;
-      nord-tmux)
-        mkdir -p "$HOME"/.tmux
-        symlink "$dest_dir"/nord.tmux "$HOME"/.tmux/nord.tmux
-        ;;
-      nord-vim)
-        mkdir -p "$HOME"/.vim/colors
-        symlink "$dest_dir"/colors/nord.vim "$HOME"/.vim/colors/nord.vim
-        ;;
-      *)
-        echo "Unexpected case '${name}'"
-        ;;
-    esac
-  done
-
-  ################################################################################
-  # vim plugins
-  ################################################################################
+install_vim_plugins() {
   vim_plugins_dir="$HOME/.vim/pack/git-plugins/start"
-  vim_plugins=(
-    "https://github.com/dense-analysis/ale.git"
-    "https://github.com/Tetralux/odin.vim"
-  )
-
   mkdir -p "$vim_plugins_dir"
-  for plugin_url in "${vim_plugins[@]}"; do
+  for name in ale odin; do
+    plugin_url="${urls[$name]}"
     if [[ ! -d "$vim_plugins_dir"/$(basename "$plugin_url" .git) ]]; then
       git clone --depth 1 "$plugin_url" "$vim_plugins_dir/$(basename "$plugin_url" .git)"
     fi
   done
+}
 
-  ################################################################################
-  # zsh plugins
-  ################################################################################
-  zsh_plugins=(
-    "zsh-users/zsh-syntax-highlighting"
-    "zsh-users/zsh-autosuggestions"
-    "zsh-users/zsh-history-substring-search"
-    "zsh-users/zsh-completions"
-  )
-
-  for plugin in "${zsh_plugins[@]}"; do
-    dest_dir="$HOME/.local/src/$plugin"
+################################################################################
+# zsh plugins
+################################################################################
+install_zsh_plugins() {
+  for plugin in zsh-syntax-highlighting zsh-autosuggestions \
+    zsh-history-substring-search zsh-completions; do
+    dest_dir="$HOME/.local/src/zsh-users/$plugin"
     if [[ ! -d "$dest_dir" ]]; then 
-      git clone --depth 1 "https://github.com/$plugin" "$dest_dir"
+      git clone --depth 1 "${urls["$plugin"]}" "$dest_dir"
     fi
   done
 }
@@ -208,35 +186,59 @@ install_third_party() {
 # link dotfiles
 ################################################################################
 link_dotfiles() {
-  dotfiles_dir=$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)/dotfiles
+  dotfiles_dir="$SCRIPT_DIR/dotfiles"
   readarray -t dotfiles < <(cd "$dotfiles_dir" && find "." -mindepth 1 -type f)
   for dotfile in "${dotfiles[@]}"; do
     symlink "$dotfiles_dir/$dotfile" "$HOME/$dotfile"
   done
 }
 
+################################################################################
+# link tools
+################################################################################
 link_tools() {
-  tools_dir=$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)/tools
+  tools_dir="$SCRIPT_DIR/tools"
   readarray -t tools < <(cd "$tools_dir" && find "." -mindepth 1 -type f)
   for tool in "${tools[@]}"; do
     symlink "$tools_dir/$tool" "$HOME/.local/bin/$tool"
   done
 }
 
-main() {
-  set -e
-
-  required_cmds=("git" "curl")
-  for required_cmd in "${required_cmds[@]}"; do
-    if ! command -v "$required_cmd" > /dev/null 2>&1; then
-      printf 'ERROR: %s not found\n' "$required_cmd"
-      exit 1
+################################################################################
+# check deps
+################################################################################
+check_deps() {
+  readarray -t deps < "$SCRIPT_DIR/deps.txt"
+  for dep in "${deps[@]}"; do
+    if ! command -v "$dep" > /dev/null 2>&1; then
+      err "$dep not found"
+      return 1
     fi
   done
+}
 
-  install_third_party
+main() {
+  local link_only
+  link_only=false
+  while getopts 'l' flag; do
+    case "${flag}" in
+      l) link_only=true ;;
+      *) echo "Unexpected option ${flag}"; usage; exit 1 ;;
+    esac
+  done
+  #echo "bailing for debug" ; exit 10
+
   link_dotfiles
   link_tools
+  if ! $link_only; then
+    check_deps
+    install_packages
+    install_nord_theme
+    install_vim_plugins
+    install_zsh_plugins
+  fi
+
+  info "Install complete."
 }
 
 main "$@"
