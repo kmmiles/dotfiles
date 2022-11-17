@@ -1,6 +1,9 @@
 # dotfiles
 
-My dotfiles. 
+My dotfiles.
+
+I chuck them in `dotfiles/dotfiles`.
+The `install` script links them to `$HOME`.
 
 ## Install
 

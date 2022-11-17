@@ -29,13 +29,6 @@ find_container_file() {
   return 1
 }
 
-# determine tag name for us in docker commands
-find_tag_name() {
-  local container_file
-  container_file="$(find_container_file "$@")" || return 1
-  printf '%s\n' "$(basename "$container_file")"
-}
-
 # determine which executable to use
 find_exe() {
   if command -v "podman" > /dev/null; then
@@ -47,42 +40,61 @@ find_exe() {
   fi
 }
 
+runcmd() {
+  exe="$1"
+  shift 1
+  args=("$@")
+
+  1>&2 printf 'Executing: %s %s\n' "$exe" "${args[*]}"
+  $exe "${args[@]}"
+}
+
 main() {
-  local exe container_file cmd
+  local exe container_file cmd project_root
   if ! exe="$(find_exe)"; then
     printf 'ERROR: docker/podman not found\n'
     exit 1
   fi
 
-  if ! container_file="$(find_container_file)"; then
+  if ! container_file="$(find_container_file ".")"; then
     printf 'ERROR: No such Dockerfile or Containerfile\n'
     exit 1
   fi
 
-  tag_name="$(basename "$(dirname "$container_file")")"
+  project_root="$(dirname "$container_file")"
+  tag_name="$(basename "$project_root")"
 
+  # parse args
   cmd="${1:-shell}"
   shift 1
   case "${cmd}" in
-    "shell")
-      printf 'doing shell\n'
-      $exe run -it --rm "$@" "$tag_name" sh
-      ;;
-    "bash")
-      printf 'doing shell\n'
-      $exe run -it --rm "$@" "$tag_name" bash
-      ;;
     "build")
-      printf 'doing build\n'
-      args=("build")
-      args+=("$@")
-      args+=("-t" "$tag_name" ".")
-      #echo "$exe ${args[*]}"
-      $exe "${args[@]}"
+      runcmd "$exe" "build" "$@" "-t" "$tag_name" "."
       ;;
     "run")
-      printf 'doing run\n'
-      $exe run --rm --name "$tag_name" "$@" "$tag_name"
+      runcmd "$exe" "run" "$@" "-v" "$project_root:/mnt" "--rm" "--name" "$tag_name" "$tag_name"
+      ;;
+    "shell")
+      runcmd "$exe" "run" "$@" "-v" "$project_root:/mnt" "-it" "--rm" "$tag_name" "sh"
+      ;;
+    "bash")
+      runcmd "$exe" "run" "$@" "-v" "$project_root:/mnt" "-it" "--rm" "$tag_name" "bash"
+      ;;
+    "ls"|"list")
+      runcmd "$exe" "container" "list" "--all" "--external"
+      ;;
+    "mrproper")
+      runcmd "$exe" "container" "list" "--all" "--external" | while read -r line; do
+        id="$(echo "$line" | awk '{print $1}')"
+        if [[ -n "$id" ]] && [[ "$id" != "CONTAINER" ]]; then
+          runcmd "$exe" "container" "rm" "-f" "$id"
+        fi
+      done
+      runcmd "$exe" "system" "reset" "-f"
+      if [[ -d "$HOME/.cache/podman" ]]; then
+        rm -rf "$HOME/.cache/podman"
+        mkdir -p "$HOME/.cache/podman"
+      fi
       ;;
     *)
       printf '%s is not a valid command\n' "$cmd"
