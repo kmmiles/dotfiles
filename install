@@ -223,13 +223,18 @@ main() {
   }
 
   check_if_curlbash() {
-    if [[ "$SCRIPT_DIR" == "main" ]] || [[ ! -f "$SCRIPT_DIR/README.md" ]]; then
+    if [[ "$SCRIPT_DIR" == "main" ]]; then
       printf "Doing curlbash install magic\n"
-      checkout_dir="$HOME/.local/src"
-      mkdir -p "$checkout_dir"
-      cd "$checkout_dir"
-      git clone "${urls[this]}"
-      cd "$(basename "${urls[this]}")"
+      checkout_base_dir="$HOME/.local/src"
+      mkdir -p "$checkout_base_dir"; cd "$checkout_base_dir"
+      if [[ -d "./dotfiles" ]]; then
+        cd "./dotfiles"
+        git pull
+      else
+        git clone "${urls[this]}"
+        cd "./dotfiles"
+      fi
+
       ./install -e
       exit 0
     fi
