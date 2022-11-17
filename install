@@ -9,13 +9,14 @@ onerr() { local s=$?; err "$0:${BASH_LINENO[0]} $BASH_COMMAND"; exit $s; }
 has()   { type "$1" &> /dev/null ; } 
 trap onerr ERR
 
-SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]:-}")" && pwd)"
+SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]:-.}")" && pwd)"
 DOWNLOAD_DIR="$HOME/Downloads"
 LOCAL_DIR="$HOME/.local"
 BIN_DIR="$LOCAL_DIR/bin"
 SRC_DIR="$LOCAL_DIR/src"
 
 declare -A urls
+urls[this]="https://github.com/kmmiles/dotfiles"
 urls[nvim]="https://github.com/neovim/neovim/releases/download/nightly/nvim-linux64.tar.gz"
 urls[prettyping]="https://raw.githubusercontent.com/denilsonsa/prettyping/master/prettyping"
 urls[exa]="https://github.com/ogham/exa/releases/download/v0.9.0/exa-linux-x86_64-0.9.0.zip"
@@ -232,6 +233,17 @@ main() {
     printf ' -e\tInstall everything. Default is link only.\n'
     printf '\tAlternatively, can be set in environment with: EVERYTHING=true\n'
   }
+
+  if [[ "$SCRIPT_DIR" == "." ]]; then
+    # this is a magic `curl | base` command.
+    checkout_dir="$HOME/.local/src"
+    mkdir -p "$checkout_dir"
+    cd "$checkout_dir"
+    git clone "${urls[this]}"
+    cd "$(basename "${urls[this]}")"
+    ./install -e
+    exit 0
+  fi
 
   local everything="${EVERYTHING:-false}"
   while getopts 'e' flag; do

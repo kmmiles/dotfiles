@@ -1,0 +1,12 @@
+FROM ubuntu
+
+RUN set -ex; \
+  apt-get update && \
+  apt-get -y install --no-install-recommends \
+    ca-certificates \
+    bash \
+    git \
+    curl \
+    unzip
+
+RUN curl -sS https://raw.githubusercontent.com/kmmiles/dotfiles/main/install | bash
