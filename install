@@ -9,7 +9,7 @@ onerr() { local s=$?; err "$0:${BASH_LINENO[0]} $BASH_COMMAND"; exit $s; }
 has()   { type "$1" &> /dev/null ; } 
 trap onerr ERR
 
-SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]:-}")" && pwd)"
 # shellcheck source=.env
 source "$SCRIPT_DIR/.env"
 
