@@ -1,20 +1,24 @@
 #!/bin/bash
 ################################################################################
+# TODO: look at envfile stuff on github
 
 usage() {
-  printf 'Usage: %s [command]\n\n' "$(basename "$0")"
+  printf 'Usage: %s [command [podman args]] [Containerfile]\n\n' "$(basename "$0")"
   printf '[command]\tAvailable options: "build", "run", "shell"\n'
   printf '\t\tDefault option: "shell"\n'
   exit 1
 }
 
-# find_container_file [source_path]
+find_lastarg() { for i in "$@"; do :; done; printf '%s\n' "$i" ; }
+
+# find_container_file [path]
 #
-# Print path of nearest Containerfile/Dockerfile.
-# Defaults to current working dir if [source_path] not supplied 
+# If [path] is omitted, ascend cwd for Containerfile/Dockerfile.
+# If [path] is a directory, use it in place of cwd.
+# If [path] is a file and exists, print it.
 find_container_file() {
-  local source_path
-  source_path="$(realpath -sm "${*:-.}")" || return 1
+  local source_path="${1:-.}"
+  source_path="$(realpath -sm "$source_path")"
   while [[ "$source_path" != "/" ]]; do
     if [[ -f "$source_path"/Dockerfile ]]; then
       printf '%s/Dockerfile\n' "$source_path"
@@ -41,56 +45,77 @@ find_exe() {
 }
 
 runcmd() {
-  exe="$1"
-  shift 1
-  args=("$@")
+  local exe
+  if command -v "podman" > /dev/null; then
+    exe="podman"
+  elif command -v "docker" > /dev/null; then
+    exe="docker"
+  else 
+    return 1
+  fi
 
+  args=("$@")
   1>&2 printf 'Executing: %s %s\n' "$exe" "${args[*]}"
   $exe "${args[@]}"
 }
 
 main() {
-  local exe container_file cmd project_root
-  if ! exe="$(find_exe)"; then
-    printf 'ERROR: docker/podman not found\n'
-    exit 1
+  # parse args...i know
+  local args lastarg container_file container_root cmd
+  args=("$@")
+  lastarg="$(find_lastarg "${args[@]}")"
+  if [[ -n "$lastarg" ]] && [[ -f "$lastarg" ]]; then
+    container_file="$(realpath -sm "$lastarg")"
+    unset "args[${#args[@]}-1]"
+  elif [[ -n "$lastarg" ]] && [[ -d "$lastarg" ]]; then
+    container_file="$(find_container_file "$lastarg")"
+    unset "args[${#args[@]}-1]"
+  else
+    container_file="$(find_container_file)"
+  fi
+  container_root="$(dirname "$container_file")"
+  cmd="${args[0]:-build}"
+  unset "args[0]"
+
+
+  # determine tag name.
+  # if container_file is named `Containerfile.something` then `something` will be added to the tag
+  # e.g. myproject:something
+  local tag_name
+  tag_name="$(basename "$container_root")"
+  x=$(basename "$container_file" | cut -s -d. -f 2)
+  if [[ -n "$x" ]]; then
+    tag_name="${tag_name}:${x}"
   fi
 
-  if ! container_file="$(find_container_file ".")"; then
-    printf 'ERROR: No such Dockerfile or Containerfile\n'
-    exit 1
-  fi
+  #printf 'x=%s, container_root=%s, container_file=%s, tag_name=%s\n' "$x" "$container_root" "$container_file" "$tag_name"
+  #exit 1
 
-  project_root="$(dirname "$container_file")"
-  tag_name="$(basename "$project_root")"
-
-  # parse args
-  cmd="${1:-shell}"
-  shift 1
   case "${cmd}" in
     "build")
-      runcmd "$exe" "build" "$@" "-t" "$tag_name" "."
+      args=("-f" "$container_file" "${args[@]}")
+      runcmd "build" "${args[@]}" "-t" "$tag_name" "."
       ;;
     "run")
-      runcmd "$exe" "run" "$@" "-v" "$project_root:/mnt" "--rm" "--name" "$tag_name" "$tag_name"
+      runcmd "run" "${args[@]}" "-v" "$container_root:/mnt" "--rm" "--name" "$tag_name" "$tag_name"
       ;;
     "shell")
-      runcmd "$exe" "run" "$@" "-v" "$project_root:/mnt" "-it" "--rm" "$tag_name" "sh"
+      runcmd "run" "${args[@]}" "-v" "$container_root:/mnt" "-it" "--rm" "$tag_name" "sh"
       ;;
     "bash")
-      runcmd "$exe" "run" "$@" "-v" "$project_root:/mnt" "-it" "--rm" "$tag_name" "bash"
+      runcmd "run" "${args[@]}" "-v" "$container_root:/mnt" "-it" "--rm" "$tag_name" "bash"
       ;;
     "ls"|"list")
-      runcmd "$exe" "container" "list" "--all" "--external"
+      runcmd "container" "list" "--all" "--external"
       ;;
     "mrproper")
-      runcmd "$exe" "container" "list" "--all" "--external" | while read -r line; do
+      runcmd "container" "list" "--all" "--external" | while read -r line; do
         id="$(echo "$line" | awk '{print $1}')"
         if [[ -n "$id" ]] && [[ "$id" != "CONTAINER" ]]; then
-          runcmd "$exe" "container" "rm" "-f" "$id"
+          runcmd "container" "rm" "-f" "$id"
         fi
       done
-      runcmd "$exe" "system" "reset" "-f"
+      runcmd "system" "reset" "-f"
       if [[ -d "$HOME/.cache/podman" ]]; then
         rm -rf "$HOME/.cache/podman"
         mkdir -p "$HOME/.cache/podman"

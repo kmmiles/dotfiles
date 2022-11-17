@@ -41,8 +41,13 @@ export LESS_TERMCAP_us=$'\e[1;4;31m'
 ################################################################################
 has() { type "$1" &> /dev/null ; } 
 
+if has exa; then 
+  alias ls='exa --color=always -g --icons --git --sort new'
+else
+  alias ls='ls --color'
+fi
+
 has fnm         &&  eval "$(fnm env)" || :
-has exa         &&  alias ls='exa --color=always -g --icons --git --sort new' || :
 has prettyping  &&  alias ping='prettyping --nolegend' || :
 has btm         &&  alias btm='btm --battery --color gruvbox' || :
 has fnm         &&  alias nvm='fnm' || :
