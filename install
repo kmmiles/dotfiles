@@ -214,18 +214,6 @@ link_tools() {
   done
 }
 
-################################################################################
-# check deps
-################################################################################
-check_deps() {
-  for dep in bash git curl unzip; do
-    if ! command -v "$dep" > /dev/null 2>&1; then
-      err "$dep not found"
-      return 1
-    fi
-  done
-}
-
 main() {
   usage() {
     printf 'Usage: %s [OPTIONS]\n\n' "$(basename "$0")"
@@ -234,16 +222,28 @@ main() {
     printf '\tAlternatively, can be set in environment with: EVERYTHING=true\n'
   }
 
-  if [[ "$SCRIPT_DIR" == "." ]]; then
-    # this is a magic `curl | base` command.
-    checkout_dir="$HOME/.local/src"
-    mkdir -p "$checkout_dir"
-    cd "$checkout_dir"
-    git clone "${urls[this]}"
-    cd "$(basename "${urls[this]}")"
-    ./install -e
-    exit 0
-  fi
+  check_if_curlbash() {
+    printf "SCRIPT_DIR: %s\n" "$SCRIPT_DIR"
+    printf "BASH_SOURCE: %s\n" "${BASH_SOURCE[@]}"
+    if [[ "$SCRIPT_DIR" == "." ]]; then
+      checkout_dir="$HOME/.local/src"
+      mkdir -p "$checkout_dir"
+      cd "$checkout_dir"
+      git clone "${urls[this]}"
+      cd "$(basename "${urls[this]}")"
+      ./install -e
+      exit 0
+    fi
+  }
+
+  check_deps() {
+    for dep in bash git curl unzip; do
+      if ! command -v "$dep" > /dev/null 2>&1; then
+        err "$dep not found"
+        return 1
+      fi
+    done
+  }
 
   local everything="${EVERYTHING:-false}"
   while getopts 'e' flag; do
@@ -254,6 +254,7 @@ main() {
   done
   #echo "bailing for debug" ; exit 10
 
+  check_if_curlbash
   link_dotfiles
   link_tools
   if $everything; then
