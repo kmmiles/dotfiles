@@ -1,0 +1,17 @@
+#!/bin/bash
+
+giturl="https://github.com/kmmiles/dotfiles"
+checkout_base_dir="$HOME/.local/src"
+
+mkdir -p "$checkout_base_dir"
+cd "$checkout_base_dir" || exit 1
+
+if [[ -d "./dotfiles" ]]; then
+  cd "./dotfiles" || exit 1
+  git pull
+else
+  git clone "$giturl"
+  cd "./dotfiles" || exit 1
+fi
+
+./install -e
