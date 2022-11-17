@@ -63,3 +63,15 @@ fi
 export BUN_INSTALL="/home/kmmiles/.bun"
 export PATH="$BUN_INSTALL/bin:$PATH"
 . "/home/kmmiles/.wasmedge/env"
+
+help() {
+  if ! command -v "bash" > /dev/null 2>&1; then
+    printf 'Bash not available. Ouch.\n'
+    return 1
+  fi
+
+  printf 'Using bash help\n'
+  bash -c "help $@"
+}
+
+# use `bash` help

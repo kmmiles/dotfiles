@@ -39,8 +39,8 @@ symlink() {
   [[ -n "$src" && -n "$dest" ]] || return 1
 
   # convert paths to absolute
-  src="$(realpath -s "$src")"
-  dest="$(realpath -s "$dest")"
+  src="$(realpath -sm "$src")"
+  dest="$(realpath -sm "$dest")"
 
   # destination exists and isn't a link; rename it.
   if [[ -f "$dest" && ! -h "$dest" ]]; then
@@ -52,7 +52,7 @@ symlink() {
   # if the link doesn't exist, create it
   if [[ ! -h "$dest" ]]; then
     info "Symlinking $src -> $dest"
-    mkdir -p "$(dirname "$dest")"
+    mkdir -vp "$(dirname "$dest")"
     ln -bsf "$src" "$dest"
   fi
 }
@@ -76,11 +76,9 @@ download() {
   [[ -n "$filename" ]] || return 1
 
   filepath="$DOWNLOAD_DIR/$filename"
-  [[ -n "$filepath" ]] || return 1
-
   if [[ ! -f "$filepath" ]]; then
     mkdir -p "$DOWNLOAD_DIR"
-    curl -sfL -o "$filepath" "$url" || return 1
+    curl -fL -o "$filepath" "$url" || return 1
   fi
 
   printf '%s\n' "$filepath"
@@ -90,8 +88,9 @@ install_packages() {
   mkdir -p "$BIN_DIR"
 
   if ! has "nvim"; then
+    set -x
     info "Installing nvim"
-    tar xmzf "$(dl "${urls[nvim]}")" --strip-components=1 -C "$LOCAL_DIR"
+    tar xmzf "$(download "${urls[nvim]}")" --strip-components=1 -C "$LOCAL_DIR"
   fi
 
   # prettyping

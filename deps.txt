@@ -1,3 +1,4 @@
 bash
 git
 curl
+unzip

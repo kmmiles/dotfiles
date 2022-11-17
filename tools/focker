@@ -62,18 +62,23 @@ main() {
   tag_name="$(basename "$(dirname "$container_file")")"
 
   cmd="${1:-shell}"
-  printf 'cmd=%s\ntag_name=%s\nexe=%s\n' \
-    "$cmd" "$tag_name" "$exe"
-  exit 1
-  shift $((OPTIND-1))
+  shift 1
   case "${cmd}" in
     "shell")
       printf 'doing shell\n'
       $exe run -it --rm "$@" "$tag_name" sh
       ;;
+    "bash")
+      printf 'doing shell\n'
+      $exe run -it --rm "$@" "$tag_name" bash
+      ;;
     "build")
       printf 'doing build\n'
-      $exe build -t "$tag_name" "$@" .
+      args=("build")
+      args+=("$@")
+      args+=("-t" "$tag_name" ".")
+      #echo "$exe ${args[*]}"
+      $exe "${args[@]}"
       ;;
     "run")
       printf 'doing run\n'
