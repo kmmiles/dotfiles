@@ -9,5 +9,4 @@ RUN set -ex; \
     curl \
     unzip
 
-RUN set -ex; \
-  curl -sS https://raw.githubusercontent.com/kmmiles/dotfiles/main/install | bash
+RUN set -ex; curl -sS https://raw.githubusercontent.com/kmmiles/dotfiles/main/install | bash

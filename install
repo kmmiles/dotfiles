@@ -223,9 +223,8 @@ main() {
   }
 
   check_if_curlbash() {
-    printf "SCRIPT_DIR: %s\n" "$SCRIPT_DIR"
-    printf "BASH_SOURCE: %s\n" "${BASH_SOURCE[@]}"
-    if [[ "$SCRIPT_DIR" == "." ]]; then
+    if [[ "$SCRIPT_DIR" == "main" ]] || [[ ! -f "$SCRIPT_DIR/README.md" ]]; then
+      printf "Doing curlbash install magic\n"
       checkout_dir="$HOME/.local/src"
       mkdir -p "$checkout_dir"
       cd "$checkout_dir"
