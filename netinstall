@@ -1,5 +1,12 @@
 #!/bin/bash
 
+for dep in bash git curl unzip; do
+  if ! command -v "$dep" > /dev/null 2>&1; then
+    printf 'Command not found: %s\n' "$dep"
+    exit 1
+  fi
+done
+
 giturl="https://github.com/kmmiles/dotfiles"
 checkout_base_dir="$HOME/.local/src"
 
