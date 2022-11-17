@@ -10,9 +10,6 @@ has()   { type "$1" &> /dev/null ; }
 trap onerr ERR
 
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]:-}")" && pwd)"
-# shellcheck source=.env
-source "$SCRIPT_DIR/.env"
-
 DOWNLOAD_DIR="$HOME/Downloads"
 LOCAL_DIR="$HOME/.local"
 BIN_DIR="$LOCAL_DIR/bin"
