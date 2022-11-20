@@ -47,10 +47,10 @@ fi
 
 # override history settings for zsh
 HISTFILE=~/.zsh_history
-HISTCONTROL=ignoredups:erasedups
-HISTSIZE=100000
-HISTFILESIZE=100000
-SAVEHIST=100000
-export HISTFILE HISTCONTROL HISTSIZE HISTFILESIZE SAVEHIST
+export HISTFILE 
 setopt appendhistory
 
+# init starship if it's installed
+if command -v "starship" > /dev/null 2>&1; then
+  eval "$(starship init zsh)"
+fi

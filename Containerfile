@@ -1,10 +1,10 @@
-FROM ubuntu
+FROM fedora
 
 RUN set -ex; \
-  apt-get update && \
-  apt-get -y install --no-install-recommends \
+  dnf install -y \
     ca-certificates \
     bash \
+    procps \
     git \
     curl \
     unzip
@@ -12,6 +12,5 @@ RUN set -ex; \
 COPY . /app
 WORKDIR /app
 
-#
 RUN set -ex; \
-  ./install
+  ./install -e

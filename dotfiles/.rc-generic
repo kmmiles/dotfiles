@@ -71,9 +71,25 @@ EMACSPATH="$HOME"/.emacs.d
 FLUTTERPATH="$HOME"/.local/flutter
 DENO_INSTALL="$HOME/.deno"
 NIMPATH="$HOME/.nimble"
+CARGOPATH="$HOME/.cargo"
+BUN_INSTALL="$HOME/.bun"
 
-PATH="$HOME/.local/bin:$GOPATH/bin:$EMACSPATH/bin:$FLUTTERPATH/bin:$PONYPATH/bin:$DENO_INSTALL/bin:$NIMPATH/bin:$PATH"
-export PATH GOPATH PONYPATH EMACSPATH FLUTTERPATH DENOINSTALL NIMPATH
+PATH="$PATH:$HOME/.local/bin:$GOPATH/bin:$EMACSPATH/bin:$FLUTTERPATH/bin"
+PATH="$PATH:$CARGOPATH/bin:$BUN_INSTALL/bin:$PONYPATH/bin:$DENO_INSTALL/bin:$NIMPATH/bin"
+export PATH GOPATH PONYPATH EMACSPATH FLUTTERPATH DENO_INSTALL NIMPATH CARGOPATH BUN_INSTALL
+
+# source environments
+if [[ -f "$HOME"/.cargo/env ]]; then
+  source "$HOME"/.cargo/env
+fi
+
+if [[ -s "$HOME/.bun/_bun" ]]; then
+  source "$HOME/.bun/_bun"
+fi
+
+if [[ -f "$HOME/.wasmedge/env" ]]; then
+  source "$HOME/.wasmedge/env"
+fi
 
 # colors
 export COLORTERM=truecolor
@@ -111,28 +127,9 @@ has ls          &&  alias lsd='ls -ld' || :
 has stat        &&  alias stat-fs='stat -fc "%T"'
 has glow        &&  alias glow='glow -p'
 
-# old x11 for wsl2
+# x11 for wsl2 (only enable if no WSLg)
 if has wslpath && [[ ! -d "/mnt/wslg" ]]; then
   DISPLAY=$(grep nameserver /etc/resolv.conf | awk '{print $2; exit;}'):0.0
   export DISPLAY
-fi
-
-if [[ -f "$HOME"/.cargo/env ]]; then
-  source "$HOME"/.cargo/env
-fi
-
-# init starship if it's installed
-if command -v "starship" > /dev/null 2>&1; then
-  eval "$(starship init zsh)"
-fi
-
-# bun
-[ -s "$HOME/.bun/_bun" ] && source "$HOME/.bun/_bun"
-export BUN_INSTALL="$HOME/.bun"
-export PATH="$BUN_INSTALL/bin:$PATH"
-
-# wasmedge
-if [[ -f "$HOME/.wasmedge/env" ]]; then
-  source "$HOME/.wasmedge/env"
 fi
 
