@@ -2,10 +2,6 @@
 
 set -euo pipefail
 
-SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]:-.}")" && pwd)"
-# shellcheck source=urls.sh
-source "$SCRIPT_DIR/urls.sh"
-
 for dep in bash git curl unzip; do
   if ! command -v "$dep" > /dev/null 2>&1; then
     printf 'Command not found: %s\n' "$dep"
@@ -21,7 +17,7 @@ if [[ -d "./dotfiles" ]]; then
   cd "./dotfiles" || exit 1
   git pull
 else
-  git clone "${urls[dotfiles]}"
+  git clone "https://github.com/kmmiles/dotfiles"
   cd "./dotfiles" || exit 1
 fi
 
