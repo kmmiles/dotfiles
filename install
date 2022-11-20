@@ -116,6 +116,9 @@ gitclone() {
 install_packages() {
   mkdir -p "$LOCAL_BIN_DIR"
 
+  # make sure we're cargo's path too
+  PATH="$PATH:$HOME/.local/bin:$HOME/.cargo/bin"
+
   if ! has "nvim"; then
     info "Installing nvim"
     tar xmzf "$(download "${urls[nvim]}")" --strip-components=1 -C "$LOCAL_DIR"
