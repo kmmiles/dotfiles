@@ -1,4 +1,7 @@
 #!/usr/bin/zsh
+#
+#
+help() { bash -c "help $*" ; } 
 
 # zsh options
 setopt autocd
@@ -51,27 +54,3 @@ SAVEHIST=100000
 export HISTFILE HISTCONTROL HISTSIZE HISTFILESIZE SAVEHIST
 setopt appendhistory
 
-# init starship if it's installed
-if command -v "starship" > /dev/null 2>&1; then
-  eval "$(starship init zsh)"
-fi
-
-# bun completions
-[ -s "/home/kmmiles/.bun/_bun" ] && source "/home/kmmiles/.bun/_bun"
-
-# Bun
-export BUN_INSTALL="/home/kmmiles/.bun"
-export PATH="$BUN_INSTALL/bin:$PATH"
-. "/home/kmmiles/.wasmedge/env"
-
-help() {
-  if ! command -v "bash" > /dev/null 2>&1; then
-    printf 'Bash not available. Ouch.\n'
-    return 1
-  fi
-
-  printf 'Using bash help\n'
-  bash -c "help $@"
-}
-
-# use `bash` help

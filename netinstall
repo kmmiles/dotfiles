@@ -1,5 +1,11 @@
 #!/bin/bash
 
+set -euo pipefail
+
+SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]:-.}")" && pwd)"
+# shellcheck source=urls.sh
+source "$SCRIPT_DIR/urls.sh"
+
 for dep in bash git curl unzip; do
   if ! command -v "$dep" > /dev/null 2>&1; then
     printf 'Command not found: %s\n' "$dep"
@@ -7,9 +13,7 @@ for dep in bash git curl unzip; do
   fi
 done
 
-giturl="https://github.com/kmmiles/dotfiles"
 checkout_base_dir="$HOME/.local/src"
-
 mkdir -p "$checkout_base_dir"
 cd "$checkout_base_dir" || exit 1
 
@@ -17,7 +21,7 @@ if [[ -d "./dotfiles" ]]; then
   cd "./dotfiles" || exit 1
   git pull
 else
-  git clone "$giturl"
+  git clone "${urls[dotfiles]}"
   cd "./dotfiles" || exit 1
 fi
 

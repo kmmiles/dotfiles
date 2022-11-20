@@ -10,28 +10,13 @@ has()   { type "$1" &> /dev/null ; }
 trap onerr ERR
 
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]:-.}")" && pwd)"
+# shellcheck source=urls.sh
+source "$SCRIPT_DIR/urls.sh"
+
 DOWNLOAD_DIR="$HOME/Downloads"
 LOCAL_DIR="$HOME/.local"
-BIN_DIR="$LOCAL_DIR/bin"
-SRC_DIR="$LOCAL_DIR/src"
-
-declare -A urls
-urls[nvim]="https://github.com/neovim/neovim/releases/download/nightly/nvim-linux64.tar.gz"
-urls[prettyping]="https://raw.githubusercontent.com/denilsonsa/prettyping/master/prettyping"
-urls[exa]="https://github.com/ogham/exa/releases/download/v0.9.0/exa-linux-x86_64-0.9.0.zip"
-urls[glow]="https://github.com/charmbracelet/glow/releases/download/v1.0.2/glow_1.0.2_linux_x86_64.tar.gz"
-urls[youtube-dl]="https://yt-dl.org/downloads/latest/youtube-dl"
-urls[yq]="https://github.com/mikefarah/yq/releases/download/v4.6.1/yq_linux_amd64.tar.gz"
-urls[fnm]="https://github.com/Schniz/fnm/releases/download/v1.23.0/fnm-linux.zip"
-urls[nord-dircolors]="https://github.com/arcticicestudio/nord-dircolors"
-urls[nord-tmux]="https://github.com/arcticicestudio/nord-tmux"
-urls[nord-vim]="https://github.com/arcticicestudio/nord-vim"
-urls[ale]="https://github.com/dense-analysis/ale.git"
-urls[odin]="https://github.com/Tetralux/odin.vim"
-urls[zsh-syntax-highlighting]="https://github.com/zsh-users/zsh-syntax-highlighting"
-urls[zsh-autosuggestions]="https://github.com/zsh-users/zsh-autosuggestions"
-urls[zsh-history-substring-search]="https://github.com/zsh-users/zsh-history-substring-search"
-urls[zsh-completions]="https://github.com/zsh-users/zsh-completions"
+LOCAL_BIN_DIR="$LOCAL_DIR/bin"
+LOCAL_SRC_DIR="$LOCAL_DIR/src"
 
 ################################################################################
 # Create a symlink
@@ -68,9 +53,8 @@ symlink() {
 }
 
 ################################################################################
-# Downloads url
-# Arguments:
-#   The URL
+# download <url>
+#
 # Outputs:
 #   Absolute path of downloaded file on success
 # Returns:
@@ -82,7 +66,7 @@ download() {
   url="${1:-}"
   [[ -n "$url" ]] || return 1
 
-  filename=$(basename "$url")
+  filename="$(basename "$url")"
   [[ -n "$filename" ]] || return 1
 
   filepath="$DOWNLOAD_DIR/$filename"
@@ -94,8 +78,43 @@ download() {
   printf '%s\n' "$filepath"
 }
 
+################################################################################
+# gitclone <url> [base directory]
+#
+# Outputs:
+#   Absolute path of cloned directory on success
+# Returns:
+#   1 on error
+#
+# Clone to `~/.local/src/dotfiles`: gitclone https://github.com/kmmiles/dotfiles
+# Clone to `/dotfiles`: gitclone https://github.com/kmmiles/dotfiles /
+################################################################################
+gitclone() {
+  local repo_url base_dir dest_dir
+
+  repo_url="${1:-}"
+  [[ -n "$repo_url" ]] || return 1
+
+  base_dir="${2:-}"
+  if [[ -z "$base_dir" ]]; then
+    base_dir="${LOCAL_SRC_DIR:-}"
+  fi
+  [[ -n "$base_dir" ]] || return 1
+
+  dest_dir="$base_dir/$(basename "$repo_url" .git)"
+  if [[ -d "$dest_dir/.git" ]]; then
+    # repo already exists, just print the path.
+    printf '%s\n' "$(realpath -sm "$dest_dir")"
+  elif [[ ! -d "$dest_dir" ]]; then
+    # repo doesn't exist, clone it and print path.
+    mkdir -p "$base_dir" && \
+      git clone --depth 1 "$repo_url" "$dest_dir"
+      printf '%s\n' "$(realpath -sm "$dest_dir")"
+  fi
+}
+
 install_packages() {
-  mkdir -p "$BIN_DIR"
+  mkdir -p "$LOCAL_BIN_DIR"
 
   if ! has "nvim"; then
     info "Installing nvim"
@@ -105,7 +124,7 @@ install_packages() {
   # prettyping
   if ! has "prettyping"; then
     info "Installing prettyping"
-    install -D -v -m 755 -t "$BIN_DIR" "$(download "${urls[prettyping]}")" 
+    install -D -v -m 755 -t "$LOCAL_BIN_DIR" "$(download "${urls[prettyping]}")" 
   fi
 
   # exa
@@ -113,21 +132,21 @@ install_packages() {
     info "Installing exa"
     unzip -qu "$(download "${urls[exa]}")" -d "$DOWNLOAD_DIR"
     mv -fv "$DOWNLOAD_DIR/exa-linux-x86_64" "$DOWNLOAD_DIR/exa"
-    install -D -v -m 755 -t "$BIN_DIR" "$DOWNLOAD_DIR/exa"
+    install -D -v -m 755 -t "$LOCAL_BIN_DIR" "$DOWNLOAD_DIR/exa"
   fi
 
   # fnm
   if ! has "fnm"; then
     info "Installing fnm"
     unzip -qu "$(download "${urls[fnm]}")" -d "$DOWNLOAD_DIR"
-    install -D -v -m 755 -t "$BIN_DIR" "$DOWNLOAD_DIR/fnm"
+    install -D -v -m 755 -t "$LOCAL_BIN_DIR" "$DOWNLOAD_DIR/fnm"
   fi
 
   # glow
   if ! has "glow"; then
     info "Installing glow"
     tar xmzf "$(download "${urls[glow]}")" -C "$DOWNLOAD_DIR" glow
-    install -D -v -m 755 -t "$BIN_DIR" "$DOWNLOAD_DIR/glow"
+    install -D -v -m 755 -t "$LOCAL_BIN_DIR" "$DOWNLOAD_DIR/glow"
   fi
 
   # yq 
@@ -135,43 +154,25 @@ install_packages() {
     info "Installing yq"
     tar xmzf "$(download "${urls[yq]}")" -C "$DOWNLOAD_DIR" ./yq_linux_amd64
     mv -fv "$DOWNLOAD_DIR/yq_linux_amd64" "$DOWNLOAD_DIR/yq"
-    install -D -v -m 755 -t "$BIN_DIR" "$DOWNLOAD_DIR/yq"
+    install -D -v -m 755 -t "$LOCAL_BIN_DIR" "$DOWNLOAD_DIR/yq"
   fi
 
   # youtube-dl
   if ! has "youtube-dl"; then
     info "Installing youtube-dl"
-    install -D -v -m 755 -t "$BIN_DIR" "$(download "${urls[youtube-dl]}")"
+    install -D -v -m 755 -t "$LOCAL_BIN_DIR" "$(download "${urls[youtube-dl]}")"
   fi
 }
 
 install_nord_theme() {
-  mkdir -p "$SRC_DIR"
-
-  if [[ ! -d "$SRC_DIR/nord-dircolors" ]]; then
-    git clone --depth 1 "${urls[nord-dircolors]}" "$SRC_DIR/nord-dircolors"
-    symlink "$SRC_DIR/nord-dircolors/src/dir_colors" "$HOME/.dir_colors"
-  fi
-
-  if [[ ! -d "$SRC_DIR/nord-tmux" ]]; then
-    git clone --depth 1 "${urls[nord-tmux]}" "$SRC_DIR/nord-tmux"
-    symlink "$SRC_DIR/nord-tmux/nord.tmux" "$HOME"/.tmux/nord.tmux
-  fi
-
-  if [[ ! -d "$SRC_DIR/nord-vim" ]]; then
-    git clone --depth 1 "${urls[nord-vim]}" "$SRC_DIR/nord-vim"
-    symlink "$SRC_DIR/nord-vim/colors/nord.vim" "$HOME"/.vim/colors/nord.vim
-  fi
+  symlink "$(gitclone "${urls[nord-dircolors]}")/src/dir_colors" "$HOME/.dir_colors" 
+  symlink "$(gitclone "${urls[nord-tmux]}")/nord.tmux" "$HOME/.tmux/nord.tmux" 
+  symlink "$(gitclone "${urls[nord-vim]}")/colors/nord.vim" "$HOME/.vim/colors/nord.vim" 
 }
 
 install_vim_plugins() {
-  vim_plugins_dir="$HOME/.vim/pack/git-plugins/start"
-  mkdir -p "$vim_plugins_dir"
   for name in ale odin; do
-    plugin_url="${urls[$name]}"
-    if [[ ! -d "$vim_plugins_dir"/$(basename "$plugin_url" .git) ]]; then
-      git clone --depth 1 "$plugin_url" "$vim_plugins_dir/$(basename "$plugin_url" .git)"
-    fi
+    gitclone "${urls[$name]}" "$HOME/.vim/pack/git-plugins/start"
   done
 }
 
@@ -179,13 +180,9 @@ install_vim_plugins() {
 # zsh plugins
 ################################################################################
 install_zsh_plugins() {
-  local dest_dir
   for plugin in zsh-syntax-highlighting zsh-autosuggestions \
-    zsh-history-substring-search zsh-completions; do
-    dest_dir="$HOME/.local/src/zsh-users/$plugin"
-    if [[ ! -d "$dest_dir" ]]; then 
-      git clone --depth 1 "${urls["$plugin"]}" "$dest_dir"
-    fi
+      zsh-history-substring-search zsh-completions; do
+    gitclone "${urls["$plugin"]}" "$LOCAL_SRC_DIR/zsh-users"
   done
 }
 

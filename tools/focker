@@ -2,6 +2,8 @@
 ################################################################################
 # TODO: look at envfile stuff on github
 
+set -euo pipefail
+
 usage() {
   printf 'Usage: %s [command [podman args]] [Containerfile]\n\n' "$(basename "$0")"
   printf '[command]\tAvailable options: "build", "run", "shell"\n'
@@ -9,16 +11,17 @@ usage() {
   exit 1
 }
 
-find_lastarg() { for i in "$@"; do :; done; printf '%s\n' "$i" ; }
+find_lastarg() { for i in "$@"; do :; done; printf '%s\n' "${i:-}" ; }
 
-# find_container_file [path]
-#
-# If [path] is omitted, ascend cwd for Containerfile/Dockerfile.
-# If [path] is a directory, use it in place of cwd.
-# If [path] is a file and exists, print it.
+# find_container_file [directory]
+# 
 find_container_file() {
   local source_path="${1:-.}"
   source_path="$(realpath -sm "$source_path")"
+  if [[ ! -d "$source_path" ]]; then
+    return 1
+  fi
+
   while [[ "$source_path" != "/" ]]; do
     if [[ -f "$source_path"/Dockerfile ]]; then
       printf '%s/Dockerfile\n' "$source_path"
@@ -30,18 +33,8 @@ find_container_file() {
       source_path="$(dirname "$source_path")"
     fi
   done
-  return 1
-}
 
-# determine which executable to use
-find_exe() {
-  if command -v "podman" > /dev/null; then
-    printf 'podman\n'
-  elif command -v "docker" > /dev/null; then
-    printf 'docker\n'
-  else 
-    return 1
-  fi
+  return 1
 }
 
 runcmd() {
@@ -65,9 +58,11 @@ main() {
   args=("$@")
   lastarg="$(find_lastarg "${args[@]}")"
   if [[ -n "$lastarg" ]] && [[ -f "$lastarg" ]]; then
+    # last arg is a file
     container_file="$(realpath -sm "$lastarg")"
     unset "args[${#args[@]}-1]"
   elif [[ -n "$lastarg" ]] && [[ -d "$lastarg" ]]; then
+    # last arg is a dir
     container_file="$(find_container_file "$lastarg")"
     unset "args[${#args[@]}-1]"
   else
@@ -104,6 +99,9 @@ main() {
       ;;
     "bash")
       runcmd "run" "${args[@]}" "-v" "$container_root:/mnt" "-it" "--rm" "$tag_name" "bash"
+      ;;
+    "zsh")
+      runcmd "run" "${args[@]}" "-v" "$container_root:/mnt" "-it" "--rm" "$tag_name" "zsh"
       ;;
     "ls"|"list")
       runcmd "container" "list" "--all" "--external"

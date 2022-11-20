@@ -1,4 +1,53 @@
 ################################################################################
+# some user facing functions
+################################################################################
+
+# gitRootDir [source_path]
+#
+# Print git root dir of [source_path].
+# Defaults to current working dir if [source_path] not supplied 
+#
+# Returns: 
+#   0 git root dir found
+#   1 git root dir not found
+gitRootDir() {
+  local source_path
+
+  source_path="$(realpath -sm "${*:-.}")" || return 1
+  while [[ "${source_path}" != "/" ]]; do
+    if [[ -d "${source_path}/.git" ]]; then
+      printf '%s\n' "$source_path"
+      return 0
+    fi
+    source_path="$(dirname "$source_path")"
+  done
+  return 1
+}
+
+uefi-or-bios() {
+  [ -d /sys/firmware/efi ] && echo 'UEFI' || echo 'Legacy BIOS/CSM'
+}
+
+#du -hax "${1:-/}" 2> /dev/null | sort -nr | head -n 30
+disk-space() {
+  printf "Checking %s...\n" "$(realpath -s "${1:-.}")"
+  (cd "${1:-.}" && du -hsx ./* 2> /dev/null | sort -rh | head -10)
+}
+
+new-password() {
+  tr -dc "a-zA-Z0-9\!%^&;:" < /dev/urandom | fold -w "${1:-16}" | head -n 1
+}
+
+man-url() {
+  regex='(https?|ftp|file)://[-[:alnum:]\+&@#/%?=~_|!:,.;]*[-[:alnum:]\+&@#/%=~_|]'
+  if [[ $1 =~ $regex ]]; then 
+    /usr/bin/man <(curl -s "$1")
+  else
+    /usr/bin/man "$@"
+  fi
+}
+
+################################################################################
 # generic environment stuff
 ################################################################################
 
@@ -72,52 +121,18 @@ if [[ -f "$HOME"/.cargo/env ]]; then
   source "$HOME"/.cargo/env
 fi
 
-################################################################################
-# some user facing functions
-################################################################################
+# init starship if it's installed
+if command -v "starship" > /dev/null 2>&1; then
+  eval "$(starship init zsh)"
+fi
 
-# gitRootDir [source_path]
-#
-# Print git root dir of [source_path].
-# Defaults to current working dir if [source_path] not supplied 
-#
-# Returns: 
-#   0 git root dir found
-#   1 git root dir not found
-gitRootDir() {
-  local source_path
+# bun
+[ -s "$HOME/.bun/_bun" ] && source "$HOME/.bun/_bun"
+export BUN_INSTALL="$HOME/.bun"
+export PATH="$BUN_INSTALL/bin:$PATH"
 
-  source_path="$(realpath -sm "${*:-.}")" || return 1
-  while [[ "${source_path}" != "/" ]]; do
-    if [[ -d "${source_path}/.git" ]]; then
-      printf '%s\n' "$source_path"
-      return 0
-    fi
-    source_path="$(dirname "$source_path")"
-  done
-  return 1
-}
-
-uefi-or-bios() {
-  [ -d /sys/firmware/efi ] && echo 'UEFI' || echo 'Legacy BIOS/CSM'
-}
-
-#du -hax "${1:-/}" 2> /dev/null | sort -nr | head -n 30
-disk-space() {
-  printf "Checking %s...\n" "$(realpath -s "${1:-.}")"
-  (cd "${1:-.}" && du -hsx ./* 2> /dev/null | sort -rh | head -10)
-}
-
-new-password() {
-  tr -dc "a-zA-Z0-9\!%^&;:" < /dev/urandom | fold -w "${1:-16}" | head -n 1
-}
-
-man-url() {
-  regex='(https?|ftp|file)://[-[:alnum:]\+&@#/%?=~_|!:,.;]*[-[:alnum:]\+&@#/%=~_|]'
-  if [[ $1 =~ $regex ]]; then 
-    /usr/bin/man <(curl -s "$1")
-  else
-    /usr/bin/man "$@"
-  fi
-}
+# wasmedge
+if [[ -f "$HOME/.wasmedge/env" ]]; then
+  source "$HOME/.wasmedge/env"
+fi
 
