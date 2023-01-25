@@ -10,14 +10,20 @@ set shiftwidth=2
 set expandtab
 set backspace=2
 set modeline
+set clipboard=unnamedplus
 "set spell spelllang=en_us
 
+"  autocmd vimenter * ++nested colorscheme gruvbox
 if has('nvim')
   colorscheme nord
-"  autocmd vimenter * ++nested colorscheme gruvbox
 else
   colorscheme elflord
 endif
+
+" In ~/.vim/vimrc, or somewhere similar.
+let g:ale_linters = {
+\   'markdown': [],
+\}
 
 " transparent bg
 "autocmd vimenter * hi Normal guibg=NONE ctermbg=NONE

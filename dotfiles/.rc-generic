@@ -2,20 +2,22 @@
 # some user facing functions
 ################################################################################
 
-# gitRootDir [source_path]
-#
-# Print git root dir of [source_path].
-# Defaults to current working dir if [source_path] not supplied 
-#
-# Returns: 
-#   0 git root dir found
-#   1 git root dir not found
-gitRootDir() {
-  local source_path
+# trash [file(s)...]
+trash() {
+  local trash_dir="$HOME/Trash"
+  mkdir -p "$trash_dir" && mv -b -t "$trash_dir" -- "$@"
+}
 
-  source_path="$(realpath -sm "${*:-.}")" || return 1
+# find-up [file]
+#
+# test existence of [file], traversing up from CWD.
+# on match print path and return, else return 1.
+find-up() {
+  local file="${1:-.git}"
+
+  source_path="$(realpath -sm .)" || return 1
   while [[ "${source_path}" != "/" ]]; do
-    if [[ -d "${source_path}/.git" ]]; then
+    if [[ -e "${source_path}/$name" ]]; then
       printf '%s\n' "$source_path"
       return 0
     fi
@@ -31,17 +33,24 @@ uefi-or-bios() {
 #du -hax "${1:-/}" 2> /dev/null | sort -nr | head -n 30
 disk-space() {
   printf "Checking %s...\n" "$(realpath -s "${1:-.}")"
-  (cd "${1:-.}" && du -hsx ./* 2> /dev/null | sort -rh | head -10)
+  (cd "${1:-.}" && du -hsx ./* 2> /dev/null | sort -rh | head -20)
 }
 
-new-password() {
+# password-generate [length]
+#
+# generate password 
+password-generate() {
   tr -dc "a-zA-Z0-9\!%^&;:" < /dev/urandom | fold -w "${1:-16}" | head -n 1
 }
 
-man-url() {
+is-url() {
   regex='(https?|ftp|file)://[-[:alnum:]\+&@#/%?=~_|!:,.;]*[-[:alnum:]\+&@#/%=~_|]'
-  if [[ $1 =~ $regex ]]; then 
-    /usr/bin/man <(curl -s "$1")
+  [[ $1 =~ $regex ]]
+}
+
+man-url() {
+  if [[ -n "${1:-}" ]] && is-url "${1:-}"; then
+    /usr/bin/man <(curl -s "${1:-}")
   else
     /usr/bin/man "$@"
   fi
@@ -124,8 +133,13 @@ has dpkg        &&  alias apt-provides='dpkg -S' || :
 has tmux        &&  alias mux='tmux new -A -s km' || :
 has man         &&  alias man='man-url' || :
 has ls          &&  alias lsd='ls -ld' || :
-has stat        &&  alias stat-fs='stat -fc "%T"'
-has glow        &&  alias glow='glow -p'
+has stat        &&  alias stat-fs='stat -fc "%T"' || :
+has glow        &&  alias glow='glow -p' || :
+has shfmt       &&  alias shfmt='shfmt -i 2 -ci -bn' || :
+has shfmt       &&  alias shfmt-diff='shfmt -d -i 2 -ci -bn' || :
+has shfmt       &&  alias shfmt-write='shfmt -w -i 2 -ci -bn' || :
+has wsl.exe     &&  alias shutdown='wsl.exe --shutdown'
+has wsl.exe     &&  alias terminate='wsl.exe --terminate $WSL_DISTRO_NAME'
 
 # x11 for wsl2 (only enable if no WSLg)
 if has wslpath && [[ ! -d "/mnt/wslg" ]]; then
@@ -133,3 +147,15 @@ if has wslpath && [[ ! -d "/mnt/wslg" ]]; then
   export DISPLAY
 fi
 
+# use sixel for gnu plot
+# TODO: do sixel detection and set SIXEL=true 
+export GNUTERM="sixelgd size 1280,360 font arial 10"
+
+# Wasmer
+export WASMER_DIR="/home/kmmiles/.wasmer"
+[ -s "$WASMER_DIR/wasmer.sh" ] && source "$WASMER_DIR/wasmer.sh"
+
+# pnpm
+export PNPM_HOME="/home/kmmiles/.local/share/pnpm"
+export PATH="$PNPM_HOME:$PATH"
+# pnpm end

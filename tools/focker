@@ -4,6 +4,14 @@
 
 set -euo pipefail
 
+dbg()   { if [[ -n "${DEBUG:-}" ]]; then 1>&2 printf 'DEBUG: %s\n' "$*"; fi; }
+err()   { 1>&2 printf '%sERROR: %s%s\n' "$(tput setaf 1)" "$*" "$(tput sgr0)"; }
+warn()  { printf '%sWARNING: %s%s\n' "$(tput setaf 3)" "$*" "$(tput sgr0)"; }
+info()  { printf '%s\n' "$*"; }
+onerr() { local s=$?; err "$0:${BASH_LINENO[0]} $BASH_COMMAND"; exit $s; }
+has()   { type "$1" &> /dev/null ; } 
+trap onerr ERR
+
 usage() {
   printf 'Usage: %s [command [podman args]] [Containerfile]\n\n' "$(basename "$0")"
   printf '[command]\tAvailable options: "build", "run", "shell"\n'
@@ -37,10 +45,48 @@ find_container_file() {
   return 1
 }
 
+print_wsl_bat() {
+  local distro_name="${1:-mywsldistro}"
+  cat << EOF
+@echo off
+
+set distro_name=$distro_name
+set distro_tarball=.\rootfs.tar
+
+set /p distro_name="Specify the distro name (or press enter to use "%distro_name%"): "
+set distro_dest=%USERPROFILE%\WSL2\systems\%distro_name%
+
+:do_prompt
+  choice /C YN /M "IF THE '%distro_name%' DISTRO ALREADY EXISTS IT WILL BE REMOVED!!!"
+  IF ERRORLEVEL 2 goto do_exit 
+  IF ERRORLEVEL 1 goto do_install
+  goto do_prompt
+
+:do_install
+  wsl --terminate %distro_name% >nul 2>&1
+  wsl --unregister %distro_name% >nul 2>&1
+  md %distro_dest% >nul 2>&1
+  wsl --import %distro_name% %distro_dest% %distro_tarball%
+  echo Starting %distro_name%...
+  wsl -d %distro_name%
+
+:do_exit
+  echo Exiting...
+  pause
+  exit /b
+EOF
+}
+
 runcmd() {
   local exe
   if command -v "podman" > /dev/null; then
     exe="podman"
+    rundir="/run/user/$(id -u)"
+    if [[ ! -d "$rundir" ]]; then
+      warn "Creating missing $rundir"
+      sudo mkdir -p "$rundir" 
+      sudo chown "$(id -un):$(id -gn)" "$rundir"
+    fi
   elif command -v "docker" > /dev/null; then
     exe="docker"
   else 
@@ -105,6 +151,19 @@ main() {
       ;;
     "ls"|"list")
       runcmd "container" "list" "--all" "--external"
+      ;;
+    "export")
+      runcmd "container" "rm" "$tag_name"
+      runcmd "run" "--name" "$tag_name" "$tag_name"
+      runcmd "export" "--output" "${tag_name}-rootfs.tar" "$tag_name" 
+      ;;
+    "wslexport")
+      rm -rf "${tag_name}-wsl"
+      mkdir -p "${tag_name}-wsl"
+      runcmd "container" "rm" "$tag_name" || :
+      runcmd "run" "--name" "$tag_name" "$tag_name"
+      runcmd "export" "--output" "${tag_name}-wsl/rootfs.tar" "$tag_name" 
+      print_wsl_bat "$tag_name" > "${tag_name}-wsl/install.bat"
       ;;
     "mrproper")
       runcmd "container" "list" "--all" "--external" | while read -r line; do

@@ -26,10 +26,10 @@ compinit
 PROMPT='%B%F{240}%1~%f%b [%(?.%F{green}√.%F{red}%?)%f] $ '
 
 # zsh plugins
+#"zsh-users/zsh-history-substring-search/zsh-history-substring-search.zsh"
 plugins=(
   "zsh-users/zsh-syntax-highlighting/zsh-syntax-highlighting.zsh"
   "zsh-users/zsh-autosuggestions/zsh-autosuggestions.zsh"
-  "zsh-users/zsh-history-substring-search/zsh-history-substring-search.zsh"
 )
 for plugin in $plugins; do
   if [[ -f "$HOME/.local/src/$plugin" ]]; then
@@ -54,3 +54,7 @@ setopt appendhistory
 if command -v "starship" > /dev/null 2>&1; then
   eval "$(starship init zsh)"
 fi
+
+export PYENV_ROOT="$HOME/.pyenv"
+command -v pyenv >/dev/null || export PATH="$PYENV_ROOT/bin:$PATH"
+eval "$(pyenv init -)"
