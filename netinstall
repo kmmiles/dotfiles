@@ -21,4 +21,4 @@ else
   cd "./dotfiles" || exit 1
 fi
 
-./install -e
+./install "$@"

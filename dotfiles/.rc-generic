@@ -1,6 +1,8 @@
 ################################################################################
-# some user facing functions
+# functions
 ################################################################################
+#
+has() { type "$1" &> /dev/null ; } 
 
 # trash [file(s)...]
 trash() {
@@ -33,7 +35,7 @@ uefi-or-bios() {
 #du -hax "${1:-/}" 2> /dev/null | sort -nr | head -n 30
 disk-space() {
   printf "Checking %s...\n" "$(realpath -s "${1:-.}")"
-  (cd "${1:-.}" && du -hsx ./* 2> /dev/null | sort -rh | head -20)
+  (cd "${1:-.}" && du -Lhsx ./* 2> /dev/null | sort -rh | head -20)
 }
 
 # password-generate [length]
@@ -82,22 +84,18 @@ DENO_INSTALL="$HOME/.deno"
 NIMPATH="$HOME/.nimble"
 CARGOPATH="$HOME/.cargo"
 BUN_INSTALL="$HOME/.bun"
+RTXPATH="$HOME/.local/share/rtx"
+PNPM_HOME="$HOME/.local/share/pnpm"
+export GOPATH PONYPATH EMACSPATH FLUTTERPATH DENO_INSTALL NIMPATH CARGOPATH BUN_INSTALL RTXPATH PNPM_HOME
 
-PATH="$PATH:$HOME/.local/bin:$GOPATH/bin:$EMACSPATH/bin:$FLUTTERPATH/bin"
-PATH="$PATH:$CARGOPATH/bin:$BUN_INSTALL/bin:$PONYPATH/bin:$DENO_INSTALL/bin:$NIMPATH/bin"
-export PATH GOPATH PONYPATH EMACSPATH FLUTTERPATH DENO_INSTALL NIMPATH CARGOPATH BUN_INSTALL
+X="$HOME/.local/bin:$GOPATH/bin:$EMACSPATH/bin:$FLUTTERPATH/bin:$PNPM_HOME"
+X="$X:$CARGOPATH/bin:$BUN_INSTALL/bin:$PONYPATH/bin:$DENO_INSTALL/bin:$NIMPATH/bin:$RTXPATH/bin"
+PATH="$X:$PATH"
+export PATH
 
 # source environments
 if [[ -f "$HOME"/.cargo/env ]]; then
   source "$HOME"/.cargo/env
-fi
-
-if [[ -s "$HOME/.bun/_bun" ]]; then
-  source "$HOME/.bun/_bun"
-fi
-
-if [[ -f "$HOME/.wasmedge/env" ]]; then
-  source "$HOME/.wasmedge/env"
 fi
 
 # colors
@@ -110,52 +108,43 @@ export LESS_TERMCAP_so=$'\e[01;33m'
 export LESS_TERMCAP_ue=$'\e[0m'
 export LESS_TERMCAP_us=$'\e[1;4;31m'
 
+#export GNUTERM="sixelgd size 1280,360 font arial 10"
+################################################################################
+# activate rtx
+################################################################################
+if command -v "rtx" > /dev/null 2>&1; then
+  eval "$(rtx activate)"
+  eval "$(rtx hook-env)"
+fi
+
 ################################################################################
 # create aliases based on the installed tools
 ################################################################################
-has() { type "$1" &> /dev/null ; } 
-
 if has exa; then 
-  alias ls='exa --color=always -g --icons --git --sort new'
+  alias ls='exa --octal-permissions --color=always -g --icons --git --sort new'
 else
   alias ls='ls --color'
 fi
 
-has fnm         &&  eval "$(fnm env)" || :
-has prettyping  &&  alias ping='prettyping --nolegend' || :
-has btm         &&  alias btm='btm --battery --color gruvbox' || :
-has fnm         &&  alias nvm='fnm' || :
-has nvim        &&  alias vim='nvim' || :
-has python3     &&  alias httpd='python3 -m http.server' || :
-has less        &&  alias less='less -R' || :
-has apt-file    &&  alias whathas='apt-file search' || :
-has dpkg        &&  alias apt-provides='dpkg -S' || :
-has tmux        &&  alias mux='tmux new -A -s km' || :
-has man         &&  alias man='man-url' || :
-has ls          &&  alias lsd='ls -ld' || :
-has stat        &&  alias stat-fs='stat -fc "%T"' || :
-has glow        &&  alias glow='glow -p' || :
-has shfmt       &&  alias shfmt='shfmt -i 2 -ci -bn' || :
-has shfmt       &&  alias shfmt-diff='shfmt -d -i 2 -ci -bn' || :
-has shfmt       &&  alias shfmt-write='shfmt -w -i 2 -ci -bn' || :
+has fnm         &&  eval "$(fnm env)" 
+has prettyping  &&  alias ping='prettyping --nolegend'
+has btm         &&  alias btm='btm --battery --color gruvbox'
+has fnm         &&  alias nvm='fnm'
+has nvim        &&  alias vim='nvim'
+has python3     &&  alias httpd='python3 -m http.server' 
+has less        &&  alias less='less -R'
+has apt-file    &&  alias whathas='apt-file search'
+has dpkg        &&  alias apt-provides='dpkg -S'
+has tmux        &&  alias mux='tmux new -A -s km'
+has man         &&  alias man='man-url'
+has ls          &&  alias lsd='ls -ld'
+has stat        &&  alias stat-fs='stat -fc "%T"'
+has glow        &&  alias glow='glow -p'
+has shfmt       &&  alias shfmt='shfmt -i 2 -ci -bn'
+has shfmt       &&  alias shfmt-diff='shfmt -d -i 2 -ci -bn'
+has shfmt       &&  alias shfmt-write='shfmt -w -i 2 -ci -bn'
 has wsl.exe     &&  alias shutdown='wsl.exe --shutdown'
 has wsl.exe     &&  alias terminate='wsl.exe --terminate $WSL_DISTRO_NAME'
-
-# x11 for wsl2 (only enable if no WSLg)
-if has wslpath && [[ ! -d "/mnt/wslg" ]]; then
-  DISPLAY=$(grep nameserver /etc/resolv.conf | awk '{print $2; exit;}'):0.0
-  export DISPLAY
-fi
-
-# use sixel for gnu plot
-# TODO: do sixel detection and set SIXEL=true 
-export GNUTERM="sixelgd size 1280,360 font arial 10"
-
-# Wasmer
-export WASMER_DIR="/home/kmmiles/.wasmer"
-[ -s "$WASMER_DIR/wasmer.sh" ] && source "$WASMER_DIR/wasmer.sh"
-
-# pnpm
-export PNPM_HOME="/home/kmmiles/.local/share/pnpm"
-export PATH="$PNPM_HOME:$PATH"
-# pnpm end
+has npm         &&  alias vite='npm create vite@latest' 
+has rsync       &&  alias cprs='rsync -avuP'
+has rsync       &&  alias rscp='rsync -avuP'

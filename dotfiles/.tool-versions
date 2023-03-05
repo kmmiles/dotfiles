@@ -1,0 +1,14 @@
+nodejs      18.14.2
+pnpm        latest
+python      3.11.0
+shfmt       latest
+shellcheck  latest
+starship    latest
+exa         latest
+fd          latest
+glow        latest
+bpkg        latest
+yq          latest
+jq          latest
+neovim      latest
+hyperfine   latest

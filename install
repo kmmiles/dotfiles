@@ -123,58 +123,64 @@ gitclone() {
 install_packages() {
   mkdir -p "$LOCAL_BIN_DIR"
 
-  # make sure we're cargo's path too
-  PATH="$PATH:$HOME/.local/bin:$HOME/.cargo/bin"
+  PATH="$LOCAL_BIN_DIR:$HOME/.cargo/bin:$HOME/.local/share/rtx/bin:$PATH"
 
-  if ! has "nvim"; then
-    info "Installing nvim"
-    tar xmzf "$(download "${urls[nvim]}")" --strip-components=1 -C "$LOCAL_DIR"
+  if ! has rtx; then
+    info "Installing rtx"
+    "$SCRIPT_DIR"/dotfiles/.local/bin/install-rtx
   fi
+
+  rtx install
+
+  #if ! has "nvim"; then
+  #  info "Installing nvim"
+  #  tar xmzf "$(download "${urls[nvim]}")" --strip-components=1 -C "$LOCAL_DIR"
+  #fi
 
   # prettyping
-  if ! has "prettyping"; then
-    info "Installing prettyping"
-    install -D -v -m 755 -t "$LOCAL_BIN_DIR" "$(download "${urls[prettyping]}")" 
-  fi
+  #if ! has "prettyping"; then
+  #  info "Installing prettyping"
+  #  install -D -v -m 755 -t "$LOCAL_BIN_DIR" "$(download "${urls[prettyping]}")" 
+  #fi
 
   # exa
-  if ! has "exa"; then
-    info "Installing exa"
-    unzip -qu "$(download "${urls[exa]}")" -d "$DOWNLOAD_DIR"
-    mv -fv "$DOWNLOAD_DIR/exa-linux-x86_64" "$DOWNLOAD_DIR/exa"
-    install -D -v -m 755 -t "$LOCAL_BIN_DIR" "$DOWNLOAD_DIR/exa"
-  fi
+  #if ! has "exa"; then
+  #  info "Installing exa"
+  #  unzip -qu "$(download "${urls[exa]}")" -d "$DOWNLOAD_DIR"
+  #  mv -fv "$DOWNLOAD_DIR/exa-linux-x86_64" "$DOWNLOAD_DIR/exa"
+  #  install -D -v -m 755 -t "$LOCAL_BIN_DIR" "$DOWNLOAD_DIR/exa"
+  #fi
 
   # fnm
-  if ! has "fnm"; then
-    info "Installing fnm"
-    unzip -qu "$(download "${urls[fnm]}")" -d "$DOWNLOAD_DIR"
-    install -D -v -m 755 -t "$LOCAL_BIN_DIR" "$DOWNLOAD_DIR/fnm"
-  fi
+  #if ! has "fnm"; then
+  #  info "Installing fnm"
+  #  unzip -qu "$(download "${urls[fnm]}")" -d "$DOWNLOAD_DIR"
+  #  install -D -v -m 755 -t "$LOCAL_BIN_DIR" "$DOWNLOAD_DIR/fnm"
+  #fi
 
   # pnpm
-  if ! has "pnpm"; then
-    npm install -g pnpm
-  fi
+  #if ! has "pnpm"; then
+  #  npm install -g pnpm
+  #fi
 
-  if [[ ! -d "$PNPM_HOME" ]]; then
-    pnpm setup
-  fi
+  #if [[ ! -d "$PNPM_HOME" ]]; then
+  #  pnpm setup
+  #fi
 
   # glow
-  if ! has "glow"; then
-    info "Installing glow"
-    tar xmzf "$(download "${urls[glow]}")" -C "$DOWNLOAD_DIR" glow
-    install -D -v -m 755 -t "$LOCAL_BIN_DIR" "$DOWNLOAD_DIR/glow"
-  fi
+  #if ! has "glow"; then
+  #  info "Installing glow"
+  #  tar xmzf "$(download "${urls[glow]}")" -C "$DOWNLOAD_DIR" glow
+  #  install -D -v -m 755 -t "$LOCAL_BIN_DIR" "$DOWNLOAD_DIR/glow"
+  #fi
 
   # yq 
-  if ! has "yq"; then
-    info "Installing yq"
-    tar xmzf "$(download "${urls[yq]}")" -C "$DOWNLOAD_DIR" ./yq_linux_amd64
-    mv -fv "$DOWNLOAD_DIR/yq_linux_amd64" "$DOWNLOAD_DIR/yq"
-    install -D -v -m 755 -t "$LOCAL_BIN_DIR" "$DOWNLOAD_DIR/yq"
-  fi
+  #if ! has "yq"; then
+  #  info "Installing yq"
+  #  tar xmzf "$(download "${urls[yq]}")" -C "$DOWNLOAD_DIR" ./yq_linux_amd64
+  #  mv -fv "$DOWNLOAD_DIR/yq_linux_amd64" "$DOWNLOAD_DIR/yq"
+  #  install -D -v -m 755 -t "$LOCAL_BIN_DIR" "$DOWNLOAD_DIR/yq"
+  #fi
 
   # youtube-dl
   if ! has "youtube-dl"; then
@@ -189,8 +195,17 @@ install_nord_theme() {
   symlink "$(gitclone "${urls[nord-vim]}")/colors/nord.vim" "$HOME/.vim/colors/nord.vim" 
 }
 
+install_tmux_plugins() {
+  local target_dir="$HOME/.tmux/plugins/tpm"
+  if [[ ! -d "$target_dir" ]]; then
+    mkdir -p "$(dirname "$target_dir")"
+    git clone "${urls[tpm]}" "$target_dir"
+  fi
+  "$HOME"/.tmux/plugins/tpm/bin/install_plugins
+}
+
 install_vim_goinstall() {
-  vim -S <(echo -e "GoInstall \n q \n q") > /dev/null 2>&1
+  nohup vim -S <(echo -e "GoInstall \n q \n q") > /dev/null 2>&1 &
 }
 
 install_vim_plugins() {
@@ -224,14 +239,14 @@ link_dotfiles() {
 ################################################################################
 # link tools
 ################################################################################
-link_tools() {
-  local tools_dir tools
-  tools_dir="$SCRIPT_DIR/tools"
-  readarray -t tools < <(cd "$tools_dir" && find "." -mindepth 1 -type f)
-  for tool in "${tools[@]}"; do
-    symlink "$tools_dir/$tool" "$HOME/.local/bin/$tool"
-  done
-}
+#link_tools() {
+#  local tools_dir tools
+#  tools_dir="$SCRIPT_DIR/tools"
+#  readarray -t tools < <(cd "$tools_dir" && find "." -mindepth 1 -type f)
+#  for tool in "${tools[@]}"; do
+#    symlink "$tools_dir/$tool" "$HOME/.local/bin/$tool"
+#  done
+#}
 
 main() {
   usage() {
@@ -261,14 +276,30 @@ main() {
   #echo "bailing for debug" ; exit 10
 
   link_dotfiles
-  link_tools
+  #link_tools
   if $everything; then
     check_deps
+
+    info "install_packages..."
     install_packages
+
+    info "install_nord_theme..."
     install_nord_theme
+
+    info "install_vim_plugins..."
     install_vim_plugins
+
+    info "install_vim_goinstall..."
     install_vim_goinstall
+
+    info "install_vim_plugins..."
+    install_vim_plugins
+
+    info "install_zsh_plugins..."
     install_zsh_plugins
+
+    info "install tmux plugins..."
+    install_tmux_plugins
   fi
 
   info "Install complete."

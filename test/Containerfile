@@ -1,0 +1,8 @@
+FROM almalinux:9
+WORKDIR /app
+
+COPY provision/base provision/base
+RUN set -ex; ./provision/base
+
+COPY . .
+RUN set -ex; ./install -e

@@ -28,3 +28,4 @@ let g:ale_linters = {
 " transparent bg
 "autocmd vimenter * hi Normal guibg=NONE ctermbg=NONE
 "autocmd vimenter * hi EndOfBuffer guibg=NONE ctermbg=NONE
+"

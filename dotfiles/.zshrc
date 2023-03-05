@@ -55,6 +55,5 @@ if command -v "starship" > /dev/null 2>&1; then
   eval "$(starship init zsh)"
 fi
 
-export PYENV_ROOT="$HOME/.pyenv"
-command -v pyenv >/dev/null || export PATH="$PYENV_ROOT/bin:$PATH"
-eval "$(pyenv init -)"
+#if [[ -f "$HOME"/.rc-alias ]]; then
+#  source "$HOME"/.rc-alias

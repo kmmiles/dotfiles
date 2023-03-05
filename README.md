@@ -1,9 +1,10 @@
 # dotfiles
 
-My dotfiles.
+My dotfiles. 
 
-I chuck them in `dotfiles/dotfiles`.
-The `install` script links them to `$HOME`.
+- `install` links dotfiles to `$HOME`.
+- `install -e` links *and* installs plugins/tools to `$HOME`.
+- `provision/` contains scripts for provisioning Alma/RHEL.
 
 ## Install
 

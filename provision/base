@@ -1,0 +1,24 @@
+#!/bin/bash
+
+set -e
+
+if (($(id -u) != 0)); then
+  printf 'root is required, try: sudo %s\n' "$0"
+  exit 1
+fi
+
+dnf upgrade -y
+dnf groupinstall -y "Development Tools"
+dnf install --allowerasing -y \
+  ca-certificates \
+  bash \
+  zsh \
+  procps \
+  git \
+  curl \
+  unzip \
+  make \
+  automake \
+  gcc \
+  gcc-c++ \
+  xz-devel
