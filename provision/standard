@@ -10,23 +10,25 @@ fi
 repo_dir="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
 "$repo_dir"/provision/base
 
-dnf config-manager --set-enabled crb
-dnf install -y epel-release
-dnf install -y \
+# install packages
+apt-get install --no-install-recommends -y \
   podman \
-  podman-compose \
-  kernel-devel \
   cmake \
   meson \
-  wayland-devel \
-  wayland-protocols-devel
+  util-linux \
+  libncurses-dev \
+  libevent-dev
 
-# checkout and install wl-clipboard
-PATH="$PATH:/usr/local/bin"
-if ! command -v "wl-copy" > /dev/null; then
-  repo="/tmp/wl-clipboard"
-  if [[ ! -d "$repo" ]]; then
-    git clone https://github.com/bugaevc/wl-clipboard.git "$repo"
-  fi
-  cd "$repo" && meson build && cd build && ninja && ninja install
+# wsl-vhd
+if [[ ! -f /usr/local/bin/wsl-vhd ]]; then
+  apt-get install --no-install-recommends -y \
+    qemu-utils \
+    btrfs-progs \
+    ntfs-3g \
+    exfat-fuse \
+    exfatprogs \
+    dosfstools
+
+  curl -Ls 'https://raw.githubusercontent.com/kmmiles/wsl-vhd-bash/main/wsl-vhd' > /usr/local/bin/wsl-vhd
+  chmod +x /usr/local/bin/wsl-vhd
 fi

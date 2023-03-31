@@ -26,15 +26,13 @@ compinit
 PROMPT='%B%F{240}%1~%f%b [%(?.%F{green}√.%F{red}%?)%f] $ '
 
 # zsh plugins
-#"zsh-users/zsh-history-substring-search/zsh-history-substring-search.zsh"
 plugins=(
   "zsh-users/zsh-syntax-highlighting/zsh-syntax-highlighting.zsh"
   "zsh-users/zsh-autosuggestions/zsh-autosuggestions.zsh"
 )
 for plugin in $plugins; do
-  if [[ -f "$HOME/.local/src/$plugin" ]]; then
-    source "$HOME/.local/src/$plugin"
-  fi
+  plugin_path="$HOME/.local/src/$plugin"
+  if [[ -f "$plugin_path" ]]; then source "$plugin_path"; fi
 done
 
 ################################################################################

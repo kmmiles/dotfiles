@@ -1,0 +1,5 @@
+FROM ubuntu:jammy
+WORKDIR /app
+
+RUN set -ex; \
+  curl -sS https://raw.githubusercontent.com/kmmiles/dotfiles/main/netinstall | bash

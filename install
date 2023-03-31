@@ -7,7 +7,7 @@ err()   { 1>&2 printf '%sERROR: %s%s\n' "$(tput setaf 1)" "$*" "$(tput sgr0)"; }
 warn()  { printf '%sWARNING: %s%s\n' "$(tput setaf 3)" "$*" "$(tput sgr0)"; }
 info()  { printf '%s\n' "$*"; }
 onerr() { local s=$?; err "$0:${BASH_LINENO[0]} $BASH_COMMAND"; exit $s; }
-has()   { type "$1" &> /dev/null ; } 
+have()  { type "$@" &> /dev/null ; } 
 trap onerr ERR
 
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]:-.}")" && pwd)"
@@ -125,67 +125,33 @@ install_packages() {
 
   PATH="$LOCAL_BIN_DIR:$HOME/.cargo/bin:$HOME/.local/share/rtx/bin:$PATH"
 
-  if ! has rtx; then
+  # rtx
+  if ! have rtx; then
     info "Installing rtx"
     "$SCRIPT_DIR"/dotfiles/.local/bin/install-rtx
   fi
 
-  rtx install
-
-  #if ! has "nvim"; then
-  #  info "Installing nvim"
-  #  tar xmzf "$(download "${urls[nvim]}")" --strip-components=1 -C "$LOCAL_DIR"
-  #fi
-
-  # prettyping
-  #if ! has "prettyping"; then
-  #  info "Installing prettyping"
-  #  install -D -v -m 755 -t "$LOCAL_BIN_DIR" "$(download "${urls[prettyping]}")" 
-  #fi
-
-  # exa
-  #if ! has "exa"; then
-  #  info "Installing exa"
-  #  unzip -qu "$(download "${urls[exa]}")" -d "$DOWNLOAD_DIR"
-  #  mv -fv "$DOWNLOAD_DIR/exa-linux-x86_64" "$DOWNLOAD_DIR/exa"
-  #  install -D -v -m 755 -t "$LOCAL_BIN_DIR" "$DOWNLOAD_DIR/exa"
-  #fi
-
-  # fnm
-  #if ! has "fnm"; then
-  #  info "Installing fnm"
-  #  unzip -qu "$(download "${urls[fnm]}")" -d "$DOWNLOAD_DIR"
-  #  install -D -v -m 755 -t "$LOCAL_BIN_DIR" "$DOWNLOAD_DIR/fnm"
-  #fi
-
-  # pnpm
-  #if ! has "pnpm"; then
-  #  npm install -g pnpm
-  #fi
-
-  #if [[ ! -d "$PNPM_HOME" ]]; then
-  #  pnpm setup
-  #fi
-
-  # glow
-  #if ! has "glow"; then
-  #  info "Installing glow"
-  #  tar xmzf "$(download "${urls[glow]}")" -C "$DOWNLOAD_DIR" glow
-  #  install -D -v -m 755 -t "$LOCAL_BIN_DIR" "$DOWNLOAD_DIR/glow"
-  #fi
-
-  # yq 
-  #if ! has "yq"; then
-  #  info "Installing yq"
-  #  tar xmzf "$(download "${urls[yq]}")" -C "$DOWNLOAD_DIR" ./yq_linux_amd64
-  #  mv -fv "$DOWNLOAD_DIR/yq_linux_amd64" "$DOWNLOAD_DIR/yq"
-  #  install -D -v -m 755 -t "$LOCAL_BIN_DIR" "$DOWNLOAD_DIR/yq"
-  #fi
+  info "Calling rtx install"
+  if ! rtx install; then
+    err "rtx install failed"
+    return 1
+  fi
 
   # youtube-dl
-  if ! has "youtube-dl"; then
+  if ! have "youtube-dl"; then
     info "Installing youtube-dl"
     install -D -v -m 755 -t "$LOCAL_BIN_DIR" "$(download "${urls[youtube-dl]}")"
+  fi
+
+  # podman-compose
+  if have podman pip3 && ! have podman-compose; then
+    pip3 install --user podman-compose
+  fi
+
+  # prettyping
+  if ! have prettyping; then
+    info "Installing prettyping"
+    install -D -v -m 755 -t "$LOCAL_BIN_DIR" "$(download "${urls[prettyping]}")"
   fi
 }
 
@@ -204,14 +170,11 @@ install_tmux_plugins() {
   "$HOME"/.tmux/plugins/tpm/bin/install_plugins
 }
 
-install_vim_goinstall() {
-  nohup vim -S <(echo -e "GoInstall \n q \n q") > /dev/null 2>&1 &
-}
-
 install_vim_plugins() {
   for name in ale odin vim-go; do
     gitclone "${urls[$name]}" "$HOME/.vim/pack/git-plugins/start" > /dev/null
   done
+  nohup vim -S <(echo -e "GoInstallBinaries \n q \n q") > /dev/null 2>&1 &
 }
 
 ################################################################################
@@ -236,24 +199,11 @@ link_dotfiles() {
   done
 }
 
-################################################################################
-# link tools
-################################################################################
-#link_tools() {
-#  local tools_dir tools
-#  tools_dir="$SCRIPT_DIR/tools"
-#  readarray -t tools < <(cd "$tools_dir" && find "." -mindepth 1 -type f)
-#  for tool in "${tools[@]}"; do
-#    symlink "$tools_dir/$tool" "$HOME/.local/bin/$tool"
-#  done
-#}
-
 main() {
   usage() {
     printf 'Usage: %s [OPTIONS]\n\n' "$(basename "$0")"
     printf 'OPTIONS\n'
-    printf ' -e\tInstall everything. Default is link only.\n'
-    printf '\tAlternatively, can be set in environment with: EVERYTHING=true\n'
+    printf ' -l\tLink only\n'
   }
 
 
@@ -266,41 +216,36 @@ main() {
     done
   }
 
-  local everything="${EVERYTHING:-false}"
-  while getopts 'e' flag; do
+  local link_only=false
+  while getopts 'l' flag; do
     case "${flag}" in
-      e) everything=true ;;
+      l) link_only=true ;;
       *) echo "Unexpected option ${flag}"; usage; exit 1 ;;
     esac
   done
   #echo "bailing for debug" ; exit 10
 
+  info "checking deps..."
+  check_deps
+
+  info "linking dotfiles to $HOME..."
   link_dotfiles
-  #link_tools
-  if $everything; then
-    check_deps
+  if $link_only; then exit 0; fi
 
-    info "install_packages..."
-    install_packages
+  info "install packages to $HOME..."
+  install_packages
 
-    info "install_nord_theme..."
-    install_nord_theme
+  info "install nord theme for tmux, vim, and dircolors..."
+  install_nord_theme
 
-    info "install_vim_plugins..."
-    install_vim_plugins
+  info "install vim plugins..."
+  install_vim_plugins
 
-    info "install_vim_goinstall..."
-    install_vim_goinstall
+  info "install zsh plugins..."
+  install_zsh_plugins
 
-    info "install_vim_plugins..."
-    install_vim_plugins
-
-    info "install_zsh_plugins..."
-    install_zsh_plugins
-
-    info "install tmux plugins..."
-    install_tmux_plugins
-  fi
+  info "install tmux plugins..."
+  install_tmux_plugins
 
   info "Install complete."
 }

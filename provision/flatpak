@@ -1,0 +1,11 @@
+#!/bin/bash
+
+set -e
+
+if (($(id -u) != 0)); then
+  printf 'root is required, try: sudo %s\n' "$0"
+  exit 1
+fi
+
+apt install --no-install-recommends flatpak gnome-software-plugin-flatpak
+
