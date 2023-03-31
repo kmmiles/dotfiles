@@ -1,0 +1,5 @@
+# ~/.config/starship.toml
+
+[status]
+disabled = false
+map_symbol = true
